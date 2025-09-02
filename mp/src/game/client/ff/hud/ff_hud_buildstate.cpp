@@ -164,46 +164,45 @@ void CHudBuildState::OnTick()
 
 void CHudBuildState::MsgFunc_DispenserMsg(bf_read &msg)
 {
-    int iHealth = (int) msg.ReadByte();
-    int iAmmo = (int) msg.ReadByte();
+	int iHealth = (int) msg.ReadByte();
+	int iAmmo = (int) msg.ReadByte();
 
 	V_snwprintf(m_wszDispenser, 127, L"%ls: %i%% %ls: %i%%", m_wszHealth, iHealth, m_wszAmmo, iAmmo);
 }
 
 void CHudBuildState::MsgFunc_SentryMsg(bf_read &msg)
 {
-    int iHealth = (int) msg.ReadByte();
-    int iAmmo = (int) msg.ReadByte();
-	int iLevel = (int) msg.ReadByte();
+	int iHealth = (int) msg.ReadByte();
+	int iLevel = (int)msg.ReadByte();
+	int iShells = (int)msg.ReadByte();
 
 	bool fNoRockets = false;
 
-	// Last bit of ammo is the rocket warning
-	if (iAmmo >= 128)
+	if (!msg.IsEnd())
 	{
-		fNoRockets = true;
-		iAmmo -= 128;
+		fNoRockets = !!msg.ReadOneBit();
+
 	}
 
-	V_snwprintf(m_wszSentry, 127, L"Level %i - %ls: %i%% %ls: %i%% %ls", iLevel , m_wszHealth, iHealth, m_wszAmmo, iAmmo, fNoRockets ? m_wszNoRockets : L"");
+	V_snwprintf(m_wszSentry, 127, L"Level %i - %ls: %i%% %ls: %i%% %ls", iLevel , m_wszHealth, iHealth, m_wszAmmo, iShells, fNoRockets ? m_wszNoRockets : L"");
 }
 
 void CHudBuildState::MsgFunc_ManCannonMsg(bf_read &msg)
 {
-    int iHealth = (int) msg.ReadByte();
-    //m_flManCannonTimeoutTime = msg.ReadFloat();
+	int iHealth = (int) msg.ReadByte();
+	//m_flManCannonTimeoutTime = msg.ReadFloat();
 
 	V_snwprintf(m_wszManCannon, 127, L"%ls: %i%%", m_wszHealth, iHealth);
 }
 
 void CHudBuildState::MsgFunc_DetpackMsg(bf_read &msg)
 {
-    m_flDetpackDetonateTime = msg.ReadFloat();
+	m_flDetpackDetonateTime = msg.ReadFloat();
 }
 
 void CHudBuildState::MsgFunc_PipeMsg(bf_read &msg)
 {
-    int iIncrementPipes = (int) msg.ReadByte();
+	int iIncrementPipes = (int) msg.ReadByte();
 	switch (iIncrementPipes)
 	{
 	case INCREMENT_PIPES:

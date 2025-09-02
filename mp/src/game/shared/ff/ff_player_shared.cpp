@@ -750,7 +750,7 @@ void CFFPlayer::ClassSpecificSkill()
 
 	case CLASS_MEDIC:
 		// Discard a health pack
-		if (IsAlive() && GetAmmoCount(AMMO_CELLS) >= 10)
+		if (IsAlive() && GetAmmoCount(AMMO_CELLS) >= CELLS_PER_MEDPACK)
 		{
 			CBaseEntity *pHealthDrop = CBaseEntity::Create("ff_item_healthdrop", GetAbsOrigin(), GetAbsAngles());
 
@@ -777,7 +777,8 @@ void CFFPlayer::ClassSpecificSkill()
 				// Play a sound
 				EmitSound("Item.Toss");
 
-				RemoveAmmo(10, AMMO_CELLS);
+				RemoveAmmo(CELLS_PER_MEDPACK, AMMO_CELLS);
+				SendMedpacksMsg();
 				m_fLastMedicCellRegenTick = gpGlobals->curtime;
 			}
 		}
