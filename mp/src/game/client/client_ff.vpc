@@ -154,6 +154,8 @@ $Project "Client (FF)"
 			{
 				$File "$SRCDIR\game\client\ff\vgui\fortressoptions\ff_colorpicker.cpp"
 				$File "$SRCDIR\game\client\ff\vgui\fortressoptions\ff_colorpicker.h"
+				$File "$SRCDIR\game\client\ff\vgui\fortressoptions\ff_colorpickerdialog.cpp"
+				$File "$SRCDIR\game\client\ff\vgui\fortressoptions\ff_colorpickerdialog.h"
 				$File "$SRCDIR\game\client\ff\vgui\fortressoptions\ff_crosshairoptions.cpp"
 				$File "$SRCDIR\game\client\ff\vgui\fortressoptions\ff_crosshairoptions.h"
 				$File "$SRCDIR\game\client\ff\vgui\fortressoptions\ff_customhudoptions.cpp"

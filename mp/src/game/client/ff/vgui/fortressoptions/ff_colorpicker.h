@@ -2,6 +2,7 @@
 #define FF_COLORPICKER_H
 
 #include <vgui_controls/Button.h>
+#include "ff_colorpickerdialog.h"
 #include <vgui_controls/ComboBox.h>
 #include <vgui_controls/ImagePanel.h>
 #include <vgui_controls/Panel.h>
@@ -14,6 +15,10 @@ namespace vgui
 		DECLARE_CLASS_SIMPLE(FFColorPicker, Panel);
 	public:
 		FFColorPicker(Panel* parent, const char* name, Panel* pActionSignalTarget = NULL, bool bColorModeIntensity = false);
+		FFColorPicker(Panel* parent, const char* name, const char* dialogButtonText = NULL, Panel* pActionSignalTarget = NULL, const char* pCmd = NULL, bool bColorModeIntensity = false);
+		FFColorPicker(Panel* parent, const char* name, const wchar_t* dialogButtonText = NULL, Panel* pActionSignalTarget = NULL, const char* pCmd = NULL, bool bColorModeIntensity = false);
+
+		void SetColorPickerDialog(FFColorPickerDialog* newDialog);
 
 		int GetRedComponentValue();
 		int GetGreenComponentValue();
@@ -30,6 +35,10 @@ namespace vgui
 		void SetValue(int iRed, int iGreen, int iBlue, int iAlpha);
 		void GetValue(int& iRed, int& iGreen, int& iBlue, int& iAlpha);
 
+		/*virtual void AddActionSignalTarget(Panel* messageTarget);
+		virtual void AddActionSignalTarget(VPANEL messageTarget);
+		virtual void RemoveActionSignalTarget(Panel* oldTarget);*/
+
 	private:
 		ImagePanel* m_pColorBackground;
 		Button* m_pDialogButton;
@@ -40,6 +49,7 @@ namespace vgui
 		CFFInputSlider* m_pAlpha;
 		ComboBox* m_pColorMode;
 
+		FFColorPickerDialog* m_pDialog;
 		int m_iTeamColorPreview;
 		int m_iRed;
 		int m_iGreen;
@@ -61,6 +71,7 @@ namespace vgui
 		MESSAGE_FUNC_PARAMS(OnAlphaComponentChanged, "AlphaComponentChanged", data);
 		MESSAGE_FUNC_PARAMS(OnColorModeChanged, "ColorModeChanged", data);
 		MESSAGE_FUNC_PARAMS(OnUpdateSliders, "SliderMoved", data);
+		MESSAGE_FUNC_PARAMS(OnButtonCommand, "Command", data);
 		MESSAGE_FUNC_PARAMS(OnUpdateCombos, "TextChanged", data);
 	};
 };

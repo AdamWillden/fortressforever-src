@@ -107,6 +107,59 @@ namespace vgui
 		}
 	}
 
+	FFColorPicker::FFColorPicker(
+		Panel* parent,
+		const char* panelName,
+		const char* dialogButtonText,
+		Panel* pActionSignalTarget,
+		const char* pCmd,
+		bool bColorModeIntensity)
+		: BaseClass(parent, panelName)
+	{
+		m_iRed = 255;
+		m_iGreen = 255;
+		m_iBlue = 255;
+		m_iAlpha = 255;
+
+		char dialogButtonName[128];
+		Q_strncpy(dialogButtonName, panelName, 127);
+		Q_strncat(dialogButtonName, "DialogButton", 127, COPY_ALL_CHARACTERS);
+		m_pDialogButton = new Button(parent, dialogButtonName, dialogButtonText, this, pCmd);
+
+		if (pActionSignalTarget)
+		{
+			this->AddActionSignalTarget(pActionSignalTarget);
+		}
+	}
+
+	FFColorPicker::FFColorPicker(
+		Panel* parent,
+		const char* panelName,
+		const wchar_t* dialogButtonText,
+		Panel* pActionSignalTarget,
+		const char* pCmd,
+		bool bColorModeIntensity)
+		: BaseClass(parent, panelName)
+	{
+		m_iRed = 255;
+		m_iGreen = 255;
+		m_iBlue = 255;
+		m_iAlpha = 255;
+
+		char dialogButtonName[128];
+		Q_strncpy(dialogButtonName, panelName, 127);
+		Q_strncat(dialogButtonName, "DialogButton", 127, COPY_ALL_CHARACTERS);
+		m_pDialogButton = new Button(parent, dialogButtonName, dialogButtonText, this, pCmd);
+
+		m_pDialog = new FFColorPickerDialog(this, "FFColourPicker");
+		m_pDialog->AddActionSignalTarget(this);
+
+		if (pActionSignalTarget)
+		{
+			this->AddActionSignalTarget(pActionSignalTarget);
+		}
+	}
+
 
 	void FFColorPicker::ApplySchemeSettings(
 		IScheme* pScheme)
@@ -114,6 +167,64 @@ namespace vgui
 		SetBgColor(Color(m_iRed, m_iGreen, m_iBlue, m_iAlpha));
 
 		BaseClass::ApplySchemeSettings(pScheme);
+	}
+
+	//void FFColorPicker::AddActionSignalTarget(
+	//	Panel* messageTarget)
+	//{
+	//	if (m_pDialogButton)
+	//	{
+	//		m_pDialogButton->AddActionSignalTarget(messageTarget);
+	//	}
+	//	BaseClass::AddActionSignalTarget(messageTarget);
+	//}
+
+	//void FFColorPicker::AddActionSignalTarget(
+	//	VPANEL messageTarget)
+	//{
+	//	if (m_pDialogButton)
+	//	{
+	//		m_pDialogButton->AddActionSignalTarget(messageTarget);
+	//	}
+	//	BaseClass::AddActionSignalTarget(messageTarget);
+	//}
+
+	//void FFColorPicker::RemoveActionSignalTarget(
+	//	Panel* oldTarget)
+	//{
+	//	if (m_pDialogButton)
+	//	{
+	//		m_pDialogButton->RemoveActionSignalTarget(oldTarget);
+	//	}
+	//	BaseClass::RemoveActionSignalTarget(oldTarget);
+	//}
+
+	void FFColorPicker::SetColorPickerDialog(
+		FFColorPickerDialog* newDialog)
+	{
+		if (m_pDialogButton)
+		{
+			//cant set color picker dialog if
+			AssertMsg(m_pDialogButton, "Can't set color picker dialog if we're not a dialog based instance");
+		}
+		if (m_pDialog)
+		{
+			m_pDialog->DeletePanel();
+		}
+		m_pDialog = newDialog;
+		m_pDialog->AddActionSignalTarget(this);
+	}
+
+	void FFColorPicker::OnButtonCommand(
+		KeyValues* data)
+	{
+		m_pDialog->SetVisible(true);
+
+		//m_pDialog->RemoveActionSignalTarget(this);
+
+		m_pDialog->AddActionSignalTarget(this);
+
+		m_pDialog->SetValue(m_iRed, m_iGreen, m_iBlue, m_iAlpha);
 	}
 
 	void FFColorPicker::UpdateColor()
