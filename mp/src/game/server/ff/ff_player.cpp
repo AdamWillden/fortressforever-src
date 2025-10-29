@@ -7238,6 +7238,37 @@ bool CFFPlayer::SetAmmoInClip( const char *_name, int iAmount )
 	return false;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Give ammo and update the medic's medpack display.
+//-----------------------------------------------------------------------------
+int CFFPlayer::GiveAmmo(int iCount, int iAmmoIndex, bool bSuppressSound)
+{
+	const int iAdded = BaseClass::GiveAmmo(iCount, iAmmoIndex, bSuppressSound);
+
+	if (iAdded > 0
+		&& GetClassSlot() == CLASS_MEDIC
+		&& iAmmoIndex == GetAmmoDef()->Index(AMMO_CELLS))
+	{
+		SendMedpacksMsg();
+	}
+
+	return iAdded;
+}
+
+void CFFPlayer::SendMedpacksMsg()
+{
+	const int iMaxMedpacks = GetMaxCells() / FF_MEDPACK_COST;
+	const int iNumMedpacks = GetAmmoCount(AMMO_CELLS) / FF_MEDPACK_COST;
+
+	CSingleUserRecipientFilter user(this);
+	user.MakeReliable();
+
+	UserMessageBegin(user, "MedpacksMsg");
+		WRITE_BYTE(iMaxMedpacks);
+		WRITE_BYTE(iNumMedpacks);
+	MessageEnd();
+}
+
 // Find a map guide
 CFFMapGuide *CFFPlayer::FindMapGuide(string_t targetname)
 {

@@ -274,7 +274,16 @@ public:
 
 	void	SetLastSpawn( CBaseEntity *pEntity );
 
+private:
+	// ----------------------
+	// Messages
+	// ----------------------
+	void SendMedpacksMsg();
+
 public:
+	using BaseClass::GiveAmmo;
+	int GiveAmmo(int iCount, int iAmmoIndex, bool bSuppressSound = false) override;
+
 	// Networked the random player class var -> Defrag
 	CNetworkVar( bool, m_fRandomPC );
 	int m_iNextClass;
