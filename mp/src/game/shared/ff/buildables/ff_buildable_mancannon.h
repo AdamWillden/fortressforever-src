@@ -8,7 +8,7 @@
 //
 // REVISIONS
 // ---------
-// 12/6/2007, Mulchman: 
+// 12/6/2007, Mulchman:
 //		First created
 //		Added man cannon stuff
 
@@ -45,16 +45,17 @@ public:
 	virtual int DrawModel(int flags);
 
 	// Creates a client side ONLY man cannon - used for the build slot
-	static CFFManCannon *CreateClientSideManCannon( const Vector& vecOrigin, const QAngle& vecAngles );	
+	static CFFManCannon *CreateClientSideManCannon( const Vector& vecOrigin, const QAngle& vecAngles );
 
 	float m_flLastDamage;
 #else
 	virtual void Spawn( void );
 	virtual void GoLive( void );
+	virtual void RemoveQuietly(void);
 
 	void OnObjectTouch( CBaseEntity *pOther );
 	void OnJumpPadThink( void );
-	
+
 	// These are for updating the user
 	virtual void	PhysicsSimulate();
 	float			m_flLastClientUpdate;
@@ -69,6 +70,7 @@ public:
 	virtual void Sabotage( CFFPlayer *pSaboteur ) {};
 	virtual void MaliciouslySabotage( CFFPlayer *pSaboteur ) { m_bMaliciouslySabotaged = true; m_flSabotageTime = gpGlobals->curtime + 8.0f; }
 
+	virtual void Explode(void) override;
 	virtual void Detonate( void );
 	virtual void DoExplosionDamage( void );
 

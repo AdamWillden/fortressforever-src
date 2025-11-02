@@ -8,7 +8,7 @@
 //
 // REVISIONS
 // ---------
-// 12/6/2007, Mulchman: 
+// 12/6/2007, Mulchman:
 //		First created
 //		Added man cannon stuff
 #include "cbase.h"
@@ -104,7 +104,7 @@ CFFManCannon::~CFFManCannon( void )
 #ifdef CLIENT_DLL
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void CFFManCannon::OnDataChanged( DataUpdateType_t updateType )
 {
@@ -138,7 +138,7 @@ CFFManCannon *CFFManCannon::CreateClientSideManCannon( const Vector& vecOrigin, 
 	pManCannon->SetCollisionGroup( COLLISION_GROUP_DEBRIS );
 	pManCannon->SetRenderMode( kRenderTransAlpha );
 	pManCannon->SetRenderColorA( ( byte )110 );
-	
+
 	if( FFDEV_PULSEBUILDABLE )
 		pManCannon->m_nRenderFX = g_BuildableRenderFx;
 
@@ -147,7 +147,7 @@ CFFManCannon *CFFManCannon::CreateClientSideManCannon( const Vector& vecOrigin, 
 	// that isn't NULL!
 	pManCannon->m_hOwner = (C_BaseEntity *)C_BasePlayer::GetLocalPlayer();
 	//Team Coloring -GreenMushy
-	// slightly modified by Dexter to use the member just set.. :)	
+	// slightly modified by Dexter to use the member just set.. :)
 	pManCannon->m_nSkin = ( pManCannon->m_hOwner->GetTeamNumber() - 1 );
 	pManCannon->SetClientSideOnly( true );
 	pManCannon->SetNextClientThink( CLIENT_THINK_ALWAYS );
@@ -162,7 +162,7 @@ CFFManCannon *CFFManCannon::CreateClientSideManCannon( const Vector& vecOrigin, 
 int CFFManCannon::DrawModel(int flags)
 {
 	int nRet = BaseClass::DrawModel(flags);
-	
+
 	if( gpGlobals->curtime < m_flLastDamage + MANCANNON_COMBATCOOLDOWN )
 	{
 		// Thanks mirv!
@@ -195,7 +195,7 @@ int CFFManCannon::DrawModel(int flags)
 #elif GAME_DLL
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void CFFManCannon::Spawn( void )
 {
@@ -206,8 +206,8 @@ void CFFManCannon::Spawn( void )
 
 	//Sets the team color -GreenMushy
 	CFFPlayer *pOwner = ToFFPlayer( m_hOwner.Get() ); //static_cast< CFFPlayer * >( m_hOwner.Get() );
-	if( pOwner ) 
-		m_nSkin = ( pOwner->GetTeamNumber() - 1 ); 
+	if( pOwner )
+		m_nSkin = ( pOwner->GetTeamNumber() - 1 );
 
 	m_bTakesDamage = true;//Making the jumppad take damage -GreenMushy
 	m_flLastClientUpdate = 0;
@@ -218,10 +218,18 @@ void CFFManCannon::Spawn( void )
 	//Set the current and max health to the same values -Green Mushy
 	m_iHealth = MANCANNON_HEALTH;
 	m_iMaxHealth = MANCANNON_HEALTH;
+
+	CSingleUserRecipientFilter user(pOwner);
+	user.MakeReliable();
+
+	UserMessageBegin(user, "ManCannonMsg");
+	WRITE_BYTE(BuildState_t::BUILDSTATE_BUILDING);
+	WRITE_BYTE(MANCANNON_HEALTH);
+	MessageEnd();
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void CFFManCannon::GoLive( void )
 {
@@ -247,6 +255,32 @@ void CFFManCannon::GoLive( void )
 		SetContextThink( &CFFManCannon::OnJumpPadThink, gpGlobals->curtime, "JumpPadThink" );
 	}
 	// caes
+
+	CSingleUserRecipientFilter user(pOwner);
+	user.MakeReliable();
+
+	UserMessageBegin(user, "ManCannonMsg");
+	WRITE_BYTE(BuildState_t::BUILDSTATE_BUILT);
+	WRITE_BYTE(m_iHealth);
+	MessageEnd();
+}
+
+void CFFManCannon::RemoveQuietly(void)
+{
+	VPROF_BUDGET("CFFManCannon::RemoveQuietly", VPROF_BUDGETGROUP_FF_BUILDABLE);
+
+	CFFPlayer* pOwner = GetOwnerPlayer();
+
+	CSingleUserRecipientFilter user(pOwner);
+	user.MakeReliable();
+
+	UserMessageBegin(user, "ManCannonMsg");
+	WRITE_BYTE(BuildState_t::BUILDSTATE_NOTBUILT);
+	WRITE_BYTE(0);
+	MessageEnd();
+
+	CFFBuildableObject::RemoveQuietly();
+
 }
 
 //-----------------------------------------------------------------------------
@@ -313,7 +347,7 @@ void CFFManCannon::OnObjectTouch( CBaseEntity *pOther )
 
 	if( !pPlayer )
 		return;
-	
+
 	// can only use it once per second
 	if (gpGlobals->curtime < pPlayer->m_flMancannonTime + 1.0f)
 	{
@@ -342,7 +376,7 @@ void CFFManCannon::OnObjectTouch( CBaseEntity *pOther )
 
 	pPlayer->SetGroundEntity( (CBaseEntity *)NULL );
 	pPlayer->SetAbsVelocity((vecForward * MANCANNON_PUSH_FORWARD) + Vector( 0, 0, MANCANNON_PUSH_UP ) );
-	
+
 	//Vector vecVelocity = pPlayer->GetAbsVelocity();
 	//Vector vecLatVelocity = vecVelocity * Vector(1.0f, 1.0f, 0.0f);
 
@@ -355,7 +389,7 @@ void CFFManCannon::OnObjectTouch( CBaseEntity *pOther )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 CFFManCannon *CFFManCannon::Create( const Vector& vecOrigin, const QAngle& vecAngles, CBaseEntity *pentOwner )
 {
@@ -390,7 +424,7 @@ void CFFManCannon::PhysicsSimulate()
 		//int iAmmo = (int) (100.0f * (float) m_iShells / m_iMaxShells);
 
 		// Last bit of ammo signifies whether the SG needs rockets
-		//if (m_iMaxRockets && !m_iRockets) 
+		//if (m_iMaxRockets && !m_iRockets)
 		//	m_iAmmoPercent += 128;
 
 		// If things haven't changed then do nothing more
@@ -402,7 +436,8 @@ void CFFManCannon::PhysicsSimulate()
 		user.MakeReliable();
 
 		UserMessageBegin(user, "ManCannonMsg");
-			WRITE_BYTE(iHealth);
+		WRITE_BYTE(BuildState_t::BUILDSTATE_BUILT);
+		WRITE_BYTE(iHealth);
 		MessageEnd();
 
 		m_iLastState = iState;
@@ -410,7 +445,7 @@ void CFFManCannon::PhysicsSimulate()
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void CFFManCannon::Detonate( void )
 {
@@ -425,10 +460,25 @@ void CFFManCannon::Detonate( void )
 		{
 			pEvent->SetInt( "userid", pOwner->GetUserID() );
 			gameeventmanager->FireEvent( pEvent, true );
-		}		
+		}
 	}
 
 	CFFBuildableObject::Detonate();
+}
+
+void CFFManCannon::Explode( void )
+{
+	CFFPlayer* pOwner = GetOwnerPlayer();
+
+	CSingleUserRecipientFilter user(pOwner);
+	user.MakeReliable();
+
+	UserMessageBegin(user, "ManCannonMsg");
+	WRITE_BYTE(BuildState_t::BUILDSTATE_NOTBUILT);
+	WRITE_BYTE(0);
+	MessageEnd();
+
+	CFFBuildableObject::Explode();
 }
 
 //-----------------------------------------------------------------------------
@@ -444,7 +494,7 @@ void CFFManCannon::DoExplosionDamage( void )
 	//{
 	//	CTakeDamageInfo info( this, m_hOwner, vec3_origin, GetAbsOrigin(), flDamage, DMG_BLAST );
 	//	RadiusDamage( info, GetAbsOrigin(), 625, CLASS_NONE, NULL );
-		
+
 		UTIL_ScreenShake( GetAbsOrigin(), flDamage * 0.0125f, 150.0f, m_flExplosionDuration, 620.0f, SHAKE_START );
 	//}
 }

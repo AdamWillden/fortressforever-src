@@ -126,11 +126,11 @@ public:
 	
 	virtual Vector BodyTarget( const Vector &posSrc, bool bNoisy = false ) { return WorldSpaceCenter(); }
 	
-	virtual void GoLive( void );
+	virtual void GoLive(void);
 	virtual void Detonate( void );
 	virtual void UpdateOnRemove( void );
 	virtual void RemoveSaboteur( bool bSuppressNotification = false );
-	virtual void RemoveQuietly( void );
+	virtual void RemoveQuietly(void);
 
 	static CFFBuildableObject *AttackerInflictorBuildable(CBaseEntity *pAttacker, CBaseEntity *pInflictor);
 
@@ -191,8 +191,8 @@ public:
 	virtual int VPhysicsTakeDamage( const CTakeDamageInfo &info );
 
 protected:
-	void Explode( void );
-	void SpawnGib( const char *szGibModel, bool bFlame = true, bool bDieGroundTouch = false );	
+	virtual void Explode( void );
+	void SpawnGib( const char *szGibModel, bool bFlame = true, bool bDieGroundTouch = false );
 	virtual void SpawnGibs( void );
 	void DoExplosion( void );
 	virtual void DoExplosionDamage() { AssertMsg(0, "No DoExplosionDamage()"); }
