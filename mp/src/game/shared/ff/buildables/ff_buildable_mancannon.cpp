@@ -218,6 +218,14 @@ void CFFManCannon::Spawn( void )
 	//Set the current and max health to the same values -Green Mushy
 	m_iHealth = MANCANNON_HEALTH;
 	m_iMaxHealth = MANCANNON_HEALTH;
+
+	CSingleUserRecipientFilter user(pOwner);
+	user.MakeReliable();
+
+	UserMessageBegin(user, "ManCannonMsg");
+	WRITE_BYTE(BuildState_t::BUILDSTATE_BUILDING);
+	WRITE_BYTE(MANCANNON_HEALTH);
+	MessageEnd();
 }
 
 //-----------------------------------------------------------------------------
@@ -247,6 +255,32 @@ void CFFManCannon::GoLive( void )
 		SetContextThink( &CFFManCannon::OnJumpPadThink, gpGlobals->curtime, "JumpPadThink" );
 	}
 	// caes
+
+	CSingleUserRecipientFilter user(pOwner);
+	user.MakeReliable();
+
+	UserMessageBegin(user, "ManCannonMsg");
+	WRITE_BYTE(BuildState_t::BUILDSTATE_BUILT);
+	WRITE_BYTE(m_iHealth);
+	MessageEnd();
+}
+
+void CFFManCannon::RemoveQuietly(void)
+{
+	VPROF_BUDGET("CFFManCannon::RemoveQuietly", VPROF_BUDGETGROUP_FF_BUILDABLE);
+
+	CFFPlayer* pOwner = GetOwnerPlayer();
+
+	CSingleUserRecipientFilter user(pOwner);
+	user.MakeReliable();
+
+	UserMessageBegin(user, "ManCannonMsg");
+	WRITE_BYTE(BuildState_t::BUILDSTATE_NOTBUILT);
+	WRITE_BYTE(0);
+	MessageEnd();
+
+	CFFBuildableObject::RemoveQuietly();
+
 }
 
 //-----------------------------------------------------------------------------
@@ -402,7 +436,8 @@ void CFFManCannon::PhysicsSimulate()
 		user.MakeReliable();
 
 		UserMessageBegin(user, "ManCannonMsg");
-			WRITE_BYTE(iHealth);
+		WRITE_BYTE(BuildState_t::BUILDSTATE_BUILT);
+		WRITE_BYTE(iHealth);
 		MessageEnd();
 
 		m_iLastState = iState;
@@ -429,6 +464,21 @@ void CFFManCannon::Detonate( void )
 	}
 
 	CFFBuildableObject::Detonate();
+}
+
+void CFFManCannon::Explode( void )
+{
+	CFFPlayer* pOwner = GetOwnerPlayer();
+
+	CSingleUserRecipientFilter user(pOwner);
+	user.MakeReliable();
+
+	UserMessageBegin(user, "ManCannonMsg");
+	WRITE_BYTE(BuildState_t::BUILDSTATE_NOTBUILT);
+	WRITE_BYTE(0);
+	MessageEnd();
+
+	CFFBuildableObject::Explode();
 }
 
 //-----------------------------------------------------------------------------
