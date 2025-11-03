@@ -1706,12 +1706,13 @@ void CFFPlayer::SetupClassVariables()
 
 	// Makes life simpler later to store this in an array
 	// TODO Use an array in playerclassparse instead	
-	m_iMaxAmmo[GetAmmoDef()->Index(AMMO_CELLS)] = pPlayerClassInfo.m_iMaxCells;
-	m_iMaxAmmo[GetAmmoDef()->Index(AMMO_NAILS)] = pPlayerClassInfo.m_iMaxNails;
-	m_iMaxAmmo[GetAmmoDef()->Index(AMMO_SHELLS)] = pPlayerClassInfo.m_iMaxShells;
-	m_iMaxAmmo[GetAmmoDef()->Index(AMMO_ROCKETS)] = pPlayerClassInfo.m_iMaxRockets;
-	m_iMaxAmmo[GetAmmoDef()->Index(AMMO_DETPACK)] = pPlayerClassInfo.m_iMaxDetpack;
-	m_iMaxAmmo[GetAmmoDef()->Index(AMMO_MANCANNON)] = pPlayerClassInfo.m_iMaxManCannon;
+
+	GetAmmoDef()->SetMaxCarry(AMMO_CELLS, pPlayerClassInfo.m_iMaxCells);
+	GetAmmoDef()->SetMaxCarry(AMMO_NAILS, pPlayerClassInfo.m_iMaxNails);
+	GetAmmoDef()->SetMaxCarry(AMMO_SHELLS, pPlayerClassInfo.m_iMaxShells);
+	GetAmmoDef()->SetMaxCarry(AMMO_ROCKETS, pPlayerClassInfo.m_iMaxRockets);
+	GetAmmoDef()->SetMaxCarry(AMMO_DETPACK, pPlayerClassInfo.m_iMaxDetpack);
+	GetAmmoDef()->SetMaxCarry(AMMO_MANCANNON, pPlayerClassInfo.m_iMaxManCannon);
 
 	// Can I get some freakin ammo please?
 	// Maybe some sharks with freakin laser beams?
@@ -6673,45 +6674,6 @@ bool CFFPlayer::SetAmmoInClip( const char *_name, int iAmount )
 		}
 	}
 	return false;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Give the player some ammo.
-//-----------------------------------------------------------------------------
-int CFFPlayer::GiveAmmo(int iCount, int iAmmoIndex, bool bSuppressSound)
-{
-	if (iCount <= 0)
-		return 0;
-
-	if (iAmmoIndex < 0 || iAmmoIndex >= MAX_AMMO_SLOTS)
-		return 0;
-
-	int iMax = m_iMaxAmmo[iAmmoIndex];
-	int iAdd = min(iCount, iMax - m_iAmmo[iAmmoIndex]);
-	if (iAdd < 1)
-		return 0;
-
-	// Ammo pickup sound
-	if (!bSuppressSound)
-		EmitSound("BaseCombatCharacter.AmmoPickup");
-
-	m_iAmmo.Set(iAmmoIndex, m_iAmmo[iAmmoIndex] + iAdd);
-
-	return iAdd;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Give the player some ammo.
-//-----------------------------------------------------------------------------
-int CFFPlayer::GiveAmmo(int iCount, const char *szName, bool bSuppressSound)
-{
-	int iAmmoType = GetAmmoDef()->Index(szName);
-	if (iAmmoType == -1)
-	{
-		Msg("ERROR: Attempting to give unknown ammo type (%s)\n", szName);
-		return 0;
-	}
-	return GiveAmmo(iCount, iAmmoType, bSuppressSound);
 }
 
 // Find a map guide

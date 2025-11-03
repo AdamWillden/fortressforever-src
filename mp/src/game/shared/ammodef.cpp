@@ -292,4 +292,27 @@ CAmmoDef::~CAmmoDef( void )
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Set the max carry for a given ammo type by index
+//-----------------------------------------------------------------------------
+void CAmmoDef::SetMaxCarry(int nAmmoIndex, int carry)
+{
+    if (nAmmoIndex < 1 || nAmmoIndex >= m_nAmmoIndex)
+        return;
+
+    m_AmmoType[nAmmoIndex].pMaxCarry = carry;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Set the max carry for a given ammo type by name
+//-----------------------------------------------------------------------------
+void CAmmoDef::SetMaxCarry(const char* pszName, int carry)
+{
+    int nAmmoIndex = Index(pszName);
+    if (nAmmoIndex < 1 || nAmmoIndex >= m_nAmmoIndex)
+        return;
+
+    m_AmmoType[nAmmoIndex].pMaxCarry = carry;
+}
+
 

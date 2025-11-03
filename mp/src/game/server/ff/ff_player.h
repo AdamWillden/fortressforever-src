@@ -844,11 +844,6 @@ public:
 	bool SetAmmoInClip( int iAmount );
 	bool SetAmmoInClip( const char *_name, int iAmount );
 
-	virtual int GiveAmmo(int iCount, int iAmmoIndex, bool bSuppressSound = false);
-	int	GiveAmmo(int iCount, const char *szName, bool bSuppressSound = false);
-
-	int m_iMaxAmmo[MAX_AMMO_TYPES];
-
 	// For pipebomb delay
 	void SetPipebombShotTime( float flShotTime ) { m_flPipebombShotTime = flShotTime; }
 	float GetPipebombShotTime( void ) const { return m_flPipebombShotTime; }
