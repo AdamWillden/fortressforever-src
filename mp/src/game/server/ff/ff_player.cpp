@@ -1707,12 +1707,12 @@ void CFFPlayer::SetupClassVariables()
 	// Makes life simpler later to store this in an array
 	// TODO Use an array in playerclassparse instead	
 
-	GetAmmoDef()->SetMaxCarry(AMMO_CELLS, pPlayerClassInfo.m_iMaxCells);
-	GetAmmoDef()->SetMaxCarry(AMMO_NAILS, pPlayerClassInfo.m_iMaxNails);
-	GetAmmoDef()->SetMaxCarry(AMMO_SHELLS, pPlayerClassInfo.m_iMaxShells);
-	GetAmmoDef()->SetMaxCarry(AMMO_ROCKETS, pPlayerClassInfo.m_iMaxRockets);
-	GetAmmoDef()->SetMaxCarry(AMMO_DETPACK, pPlayerClassInfo.m_iMaxDetpack);
-	GetAmmoDef()->SetMaxCarry(AMMO_MANCANNON, pPlayerClassInfo.m_iMaxManCannon);
+	SetAmmoMaxCarry(pPlayerClassInfo.m_iMaxCells, AMMO_CELLS);
+	SetAmmoMaxCarry(pPlayerClassInfo.m_iMaxNails, AMMO_NAILS);
+	SetAmmoMaxCarry(pPlayerClassInfo.m_iMaxShells, AMMO_SHELLS);
+	SetAmmoMaxCarry(pPlayerClassInfo.m_iMaxRockets, AMMO_ROCKETS);
+	SetAmmoMaxCarry(pPlayerClassInfo.m_iMaxDetpack, AMMO_DETPACK);
+	SetAmmoMaxCarry(pPlayerClassInfo.m_iMaxManCannon, AMMO_MANCANNON);
 
 	// Can I get some freakin ammo please?
 	// Maybe some sharks with freakin laser beams?
@@ -1769,6 +1769,8 @@ void CFFPlayer::InitialSpawn( void )
 	// value right away (in attempt to fix):
 	// Bug #0001217: Instant death changing class to random pc even with cl_classautokill 0
 	engine->GetClientConVarValue( engine->IndexOfEdict( edict() ), "cl_classautokill" );
+
+	m_hManCannon = CFFManCannon::Create(this);
 
 	//DevMsg("CFFPlayer::InitialSpawn");
 }
@@ -2999,7 +3001,7 @@ void CFFPlayer::RemoveBuildables( void )
 	if( GetDetpack() )
 		GetDetpack()->Cancel();
 
-	if( GetManCannon() )
+	if( IsManCannonBuilt() )
 		GetManCannon()->Cancel();
 }
 
@@ -3352,7 +3354,7 @@ void CFFPlayer::PreBuildGenericThink( void )
 		if( ( (m_iWantBuild == FF_BUILD_DISPENSER) && GetDispenser()) ||
 			( (m_iWantBuild == FF_BUILD_SENTRYGUN) && GetSentryGun()) ||
 			( (m_iWantBuild == FF_BUILD_DETPACK) && GetDetpack()) ||
-			( (m_iWantBuild == FF_BUILD_MANCANNON) && GetManCannon()) )
+			( (m_iWantBuild == FF_BUILD_MANCANNON) && IsManCannonBuilt()) )
 		{
 			if (!m_bRequireRePressBuildable)
 			{
@@ -3372,14 +3374,10 @@ void CFFPlayer::PreBuildGenericThink( void )
 						ClientPrint(this, HUD_PRINTCENTER, "#FF_BUILDERROR_MANCANNON_ALREADYBUILT");
 						m_flMancannonDetTime = gpGlobals->curtime + 2.f;
 					}
-					else
+					else if (IsManCannonBuilt())
 					{
-						CFFManCannon* pJumpPadToDet = GetManCannon();
-						if (pJumpPadToDet)
-						{
-							pJumpPadToDet->DetonateNextFrame();
-							ClientPrint(this, HUD_PRINTCENTER, "#FF_MANCANNON_DESTROYED");
-						}
+						GetManCannon()->DetonateNextFrame();
+						ClientPrint(this, HUD_PRINTCENTER, "#FF_MANCANNON_DESTROYED");
 					}
 					break;
 				}
@@ -3570,13 +3568,12 @@ void CFFPlayer::PreBuildGenericThink( void )
 
 				case FF_BUILD_MANCANNON:
 				{
-					CFFManCannon *pManCannon = CFFManCannon::Create( hBuildInfo.GetBuildOrigin(), hBuildInfo.GetBuildAngles(), this );
+					m_hManCannon->SetOwnerEntity(this);
+					m_hManCannon->Deploy(hBuildInfo.GetBuildOrigin(), hBuildInfo.GetBuildAngles());
+					m_hManCannon->SetLocation( g_pGameRules->GetChatLocation( true, this ) );
+					m_hManCannon->SetGroundOrigin( hBuildInfo.GetBuildOrigin() );
+					m_hManCannon->SetGroundAngles( hBuildInfo.GetBuildAngles() );
 
-					pManCannon->SetLocation( g_pGameRules->GetChatLocation( true, this ) );
-					pManCannon->SetGroundOrigin( hBuildInfo.GetBuildOrigin() );
-					pManCannon->SetGroundAngles( hBuildInfo.GetBuildAngles() );
-
-					m_hManCannon = pManCannon;
 					m_flBuildTime = gpGlobals->curtime + 3.5f; // 3.5 seconds to build?
 
 					// TODO: Omnibot::Notify_ManCannonBuilding( this, pManCannon );
@@ -3743,18 +3740,15 @@ void CFFPlayer::PostBuildGenericThink( void )
 
 			case FF_BUILD_MANCANNON:
 			{
-				if( GetManCannon() )
-				{
-					GetManCannon()->GoLive();
+				GetManCannon()->GoLive();
 
-					// TODO: Change to something
-					switchToWeapon = FF_WEAPON_JUMPGUN;
-					IGameEvent *pEvent = gameeventmanager->CreateEvent( "build_mancannon" );
-					if( pEvent )
-					{
-						pEvent->SetInt( "userid", GetUserID() );
-						gameeventmanager->FireEvent( pEvent, true );
-					}
+				// TODO: Change to something
+				switchToWeapon = FF_WEAPON_JUMPGUN;
+				IGameEvent *pEvent = gameeventmanager->CreateEvent( "build_mancannon" );
+				if( pEvent )
+				{
+					pEvent->SetInt( "userid", GetUserID() );
+					gameeventmanager->FireEvent( pEvent, true );
 				}
 			}
 			break;
@@ -7365,6 +7359,56 @@ void CFFPlayer::ReduceArmorClass()
 		m_flArmorType = 0.3f;
 }
 */
+
+void CFFPlayer::SetAmmoMaxCarry(int iAmmoMaxCarry, const char* szName)
+{
+	int iAmmoIndex = GetAmmoDef()->Index(szName);
+
+	SetAmmoMaxCarry(iAmmoMaxCarry, iAmmoIndex);
+}
+
+void CFFPlayer::SetAmmoMaxCarry(int iAmmoMaxCarry, int iAmmoIndex)
+{
+	if (GetAmmoDef()->MaxCarry(iAmmoIndex) == iAmmoMaxCarry)
+		return;
+
+	GetAmmoDef()->SetMaxCarry(iAmmoIndex, iAmmoMaxCarry);
+
+	if (Q_stricmp(GetAmmoDef()->GetAmmoOfIndex(iAmmoIndex)->pName, AMMO_MANCANNON) == 0
+		&& m_hManCannon)
+	{
+		m_hManCannon->SetCanHaveManCannon(iAmmoMaxCarry > 0);
+	}
+}
+
+int CFFPlayer::GiveAmmo(int iCount, int iAmmoIndex, bool bSuppressSound)
+{
+	int iAmmoGiven = BaseClass::GiveAmmo(iCount, iAmmoIndex, bSuppressSound);
+
+	if (iAmmoGiven == 0)
+		return 0;
+
+	if (Q_stricmp(GetAmmoDef()->GetAmmoOfIndex(iAmmoIndex)->pName, AMMO_MANCANNON) == 0
+		&& m_hManCannon)
+	{
+		m_hManCannon->SetHasManCannon(iAmmoGiven > 0);
+	}
+
+	return iAmmoGiven;
+}
+
+void CFFPlayer::RemoveAmmo(int iCount, int iAmmoIndex) {
+	BaseClass::RemoveAmmo(iCount, iAmmoIndex);
+
+	if (Q_stricmp(GetAmmoDef()->GetAmmoOfIndex(iAmmoIndex)->pName, AMMO_MANCANNON) == 0
+		&& m_hManCannon)
+	{
+		m_hManCannon->SetHasManCannon(
+			GetAmmoCount(iAmmoIndex) > 0);
+	}
+}
+
+
 //-----------------------------------------------------------------------------
 // Purpose: Find all sentry guns that have been sabotaged by this player and 
 //			turn them on the enemy.

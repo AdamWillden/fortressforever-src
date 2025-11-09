@@ -10,6 +10,7 @@
 
 #include "cbase.h"
 #include "ff_buildableinfo.h"
+class CFFManCannon;
 
 #ifdef CLIENT_DLL
 	#include "c_ff_player.h"
@@ -160,15 +161,15 @@ CFFBuildableInfo::CFFBuildableInfo( CFFPlayer *pPlayer, int iBuildObject )
 		else
 			break;
 		return;
-	case FF_BUILD_SENTRYGUN: 
+	case FF_BUILD_SENTRYGUN:
 		if(pPlayer->GetSentryGun())
 			m_BuildResult = BUILD_ALREADYBUILT;
 		else if(pPlayer->GetAmmoCount( AMMO_CELLS ) < FF_BUILDCOST_SENTRYGUN)
 			m_BuildResult = BUILD_NEEDAMMO;
 		else
 			break;
-		return;		
-	case FF_BUILD_DETPACK: 
+		return;
+	case FF_BUILD_DETPACK:
 		if(pPlayer->GetDetpack())
 			m_BuildResult = BUILD_ALREADYBUILT;
 		else if(pPlayer->GetAmmoCount( AMMO_DETPACK ) < 1)
@@ -177,9 +178,9 @@ CFFBuildableInfo::CFFBuildableInfo( CFFPlayer *pPlayer, int iBuildObject )
 			break;
 		return;
 	case FF_BUILD_MANCANNON:
-		if( pPlayer->GetManCannon() )
+		if(pPlayer->IsManCannonBuilt())
 			m_BuildResult = BUILD_ALREADYBUILT;
-		else if( pPlayer->GetAmmoCount( AMMO_MANCANNON ) < 1 )
+		else if(pPlayer->GetAmmoCount( AMMO_MANCANNON ) < 1)
 			m_BuildResult = BUILD_NEEDAMMO;
 		else
 			break;

@@ -418,11 +418,8 @@ namespace vgui
 		kvMessage->AddSubKey(kv);
 	}
 
-	void FFQuantityPanel::SetTeamColor()
+	void FFQuantityPanel::SetTeamColor(int iTeamNumber)
 	{
-		int iTeamNumber
-			= C_FFPlayer::GetLocalFFPlayer()->GetTeamNumber();
-
 		const Color& clrTeam
 			= g_PR->GetTeamColor(iTeamNumber);
 
@@ -486,11 +483,6 @@ namespace vgui
 
 			m_bAddToHudSent = true;
 		}
-
-		if (!engine->IsInGame())
-			return;
-
-		SetTeamColor();
 	}
 
 	KeyValues* FFQuantityPanel::AddItemStyles(

@@ -843,6 +843,13 @@ int CFFPlayer::GetArmorPercentage( void ) const
 	return (int) flPerc;
 }
 
+bool CFFPlayer::IsManCannonBuilt() const
+{
+	CFFManCannon *pManCannon = GetManCannon();
+	
+	return pManCannon && pManCannon->IsBuilt();
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: Player building? NOTE: This can include building SGs but still able to move around/shoot
 //-----------------------------------------------------------------------------

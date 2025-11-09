@@ -15,6 +15,9 @@ using namespace FFQuantityHelper;
 class CHudBuildableManCannon
     : public CHudElement, public FFQuantityPanel
 {
+public:
+    void SetHasManCannon(bool bHasManCannon);
+
 private:
     DECLARE_CLASS_SIMPLE(CHudBuildableManCannon, FFQuantityPanel);
     CHudBuildableManCannon(const char* pElementName);
@@ -26,6 +29,7 @@ private:
     float m_flBuildStartTime = 0.0f;
     float m_flBuildDuration = 0.0f;
 
+    bool m_bHasManCannon = false;
     bool m_bDeployed = false;
     bool m_bDeploying = false;
 
@@ -59,7 +63,6 @@ private:
     void Init();
     void VidInit();
 
-    void OnTick() override;
     void Paint() override;
 
     // Message Handlers

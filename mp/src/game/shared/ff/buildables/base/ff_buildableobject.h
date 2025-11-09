@@ -8,21 +8,21 @@
 //
 // REVISIONS
 // ---------
-// 12/15/2005, Mulchman: 
+// 12/15/2005, Mulchman:
 //		First created
 //
-// 12/23-25/2005, Mulchman: 
+// 12/23-25/2005, Mulchman:
 //		A bunch of modifications (explosions, gibs, fire, building checking)
 //
 // 12/28/2004, Mulchman:
-//		Bunch of mods - shares network values correctly. Officially a base 
+//		Bunch of mods - shares network values correctly. Officially a base
 //		class for other buildables
 //
-// 01/20/2004, Mulchman: 
+// 01/20/2004, Mulchman:
 //		Having no sounds (build/explode) won't cause problems
 //
-// 05/09/2005, Mulchman: 
-//		Tons of additions - better checking of build area, lots of 
+// 05/09/2005, Mulchman:
+//		Tons of additions - better checking of build area, lots of
 //		cleanup... basically an overhaul
 //
 //	06/30/2006, Mulchman:
@@ -75,20 +75,19 @@ public:
 	// --> shared
 	CFFBuildableObject();
 	virtual ~CFFBuildableObject();
-	
+
 	virtual bool IsAlive( void ) { return true; }
 	virtual bool IsPlayer( void ) const { return false; }
 	virtual bool BlocksLOS( void ) { return true; }
 	virtual int	BloodColor( void ) { return BLOOD_COLOR_MECH; } // |-- Mirv: Don't bleed
-	virtual int	GetTeamNumber();	// |-- Mirv: Easy team id accessor	
+	virtual int	GetTeamNumber();	// |-- Mirv: Easy team id accessor
 	bool IsBuilt( void	) const { return m_bBuilt; }
- 
+
 	CNetworkHandle( CBaseEntity, m_hOwner );
 
 	CFFPlayer *GetOwnerPlayer( void );
 	CFFPlayer *GetPlayerOwner( void ) { return GetOwnerPlayer(); } // I always want to type it this way instead of the one that already exists
 	CFFTeam *GetOwnerTeam( void );
-	int GetOwnerTeamId( void );
 
 	int GetHealthPercent( void ) const;
 	unsigned int GetAmmoPercent( void ) const { return m_iAmmoPercent; }
@@ -107,7 +106,7 @@ public:
 	virtual int	GetHealth( void ) const { return m_iHealth; }
 	virtual int	GetMaxHealth( void ) const { return m_iMaxHealth; }
 
-	bool CheckForOwner( void ) { return ( m_hOwner.Get() ); }		
+	bool CheckForOwner( void ) { return ( m_hOwner.Get() ); }
 
 	// Stuff for the "can't build" type glyphs
 	virtual void SetClientSideOnly( bool bValue ) { m_bClientSideOnly = bValue; }
@@ -121,12 +120,18 @@ protected:
 
 #else
 public:
-	virtual void Spawn( void ); 
-	virtual void Precache( void );
+	virtual void Deploy(const Vector& vecOrigin, const QAngle& vecAngles);
 	
+	virtual void Spawn(void);
+	virtual void Precache(void);
+
 	virtual Vector BodyTarget( const Vector &posSrc, bool bNoisy = false ) { return WorldSpaceCenter(); }
-	
+
 	virtual void GoLive(void);
+
+	virtual void GoDormant(void);
+	void GoDormantFinish(void);
+
 	virtual void Detonate( void );
 	virtual void UpdateOnRemove( void );
 	virtual void RemoveSaboteur( bool bSuppressNotification = false );
@@ -144,14 +149,14 @@ public:
 	virtual bool IsMaliciouslySabotaged() const;
 	virtual void Sabotage( CFFPlayer *pSaboteur ) {};
 	virtual void MaliciouslySabotage( CFFPlayer *pSaboteur ) { m_bMaliciouslySabotaged = true; m_flSabotageTime = gpGlobals->curtime + 8.0f; }
-	
-	virtual void Cancel( void ) 
+
+	virtual void Cancel( void )
 	{
 		// Stop the build sound
 		StopSound( m_ppszSounds[ 0 ] );
-		RemoveQuietly(); 
+		RemoveQuietly();
 	}
-	
+
 	bool CheckForOwner( void )
 	{
 		if( !m_hOwner.Get() )
@@ -262,8 +267,8 @@ protected:
 	char	m_BuildableLocation[1024];
 public:
 		virtual void DetonateThink();
-		virtual void DetonateNextFrame() 
-		{ 
+		virtual void DetonateNextFrame()
+		{
 			if( m_bMarkedForDetonation )
 				return;
 

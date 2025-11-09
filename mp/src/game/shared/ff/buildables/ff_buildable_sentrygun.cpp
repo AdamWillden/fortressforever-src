@@ -1209,10 +1209,16 @@ bool CFFSentryGun::IsTargetVisible( CBaseEntity *pTarget, int iSightDistance )
 	if( !pTarget )
 		return false;
 
-	CFFPlayer *pFFPlayer = ToFFPlayer( pTarget );
+	CFFPlayer* pFFPlayer = ToFFPlayer(pTarget);
 
 	// early out if player's not even alive
-	if ( pFFPlayer && !pFFPlayer->IsAlive() )
+	if (pFFPlayer && !pFFPlayer->IsAlive())
+		return false;
+
+	CFFBuildableObject* pFFBuildableObject = FF_ToBuildableObject(pTarget);
+
+	// early out if the buildable's not even alive
+	if (pFFBuildableObject && !pFFBuildableObject->IsBuilt())
 		return false;
 
 	// Get our aiming position

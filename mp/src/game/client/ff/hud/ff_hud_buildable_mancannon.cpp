@@ -20,7 +20,8 @@ CHudBuildableManCannon::CHudBuildableManCannon(const char* pElementName)
 {
 	SetParent(g_pClientMode->GetViewport());
 
-	SetHiddenBits(HIDEHUD_PLAYERDEAD | HIDEHUD_NOTMEDIC);
+	SetHiddenBits(HIDEHUD_PLAYERDEAD);
+	SetEnabled(false);
 
 	SetHeaderText(L"ManCannon");
 	SetHeaderIconChar('6');
@@ -55,6 +56,23 @@ CHudBuildableManCannon::CHudBuildableManCannon(const char* pElementName)
 
 CHudBuildableManCannon::~CHudBuildableManCannon()
 {
+}
+
+void CHudBuildableManCannon::SetHasManCannon(
+	bool bHasManCannon)
+{
+	if (m_bHasManCannon == bHasManCannon)
+		return;
+
+	m_bHasManCannon = bHasManCannon;
+
+	if (m_bDeploying || m_bDeployed)
+		return;
+
+	SetText(
+		m_bHasManCannon
+		? m_wsNotDeployed
+		: m_wsNotAvailable);
 }
 
 void CHudBuildableManCannon::ApplySchemeSettings(
@@ -227,18 +245,20 @@ void CHudBuildableManCannon::ApplyDisplayOptions()
 	switch (m_showPanel)
 	{
 	case ALWAYS:
-		SetHiddenBits(HIDEHUD_PLAYERDEAD | HIDEHUD_NOTSCOUT);
+		SetHiddenBits(HIDEHUD_PLAYERDEAD);
 		break;
 	case IF_BUILT:
 		// Show only if deployed (built)
-		SetHiddenBits(m_bDeployed
-			? (HIDEHUD_PLAYERDEAD | HIDEHUD_NOTSCOUT)
+		SetHiddenBits(
+			m_bDeployed
+			? HIDEHUD_PLAYERDEAD
 			: HIDEHUD_ALWAYS);
 		break;
 	case ON_BUILD:
 		// Show if deploying (building) or deployed (built)
-		SetHiddenBits((m_bDeploying || m_bDeployed)
-			? (HIDEHUD_PLAYERDEAD | HIDEHUD_NOTSCOUT)
+		SetHiddenBits(
+			(m_bDeploying || m_bDeployed)
+			? HIDEHUD_PLAYERDEAD
 			: HIDEHUD_ALWAYS);
 		break;
 	case NEVER:
@@ -281,7 +301,6 @@ void CHudBuildableManCannon::ApplyDisplayOptions()
 
 void CHudBuildableManCannon::Init()
 {
-	ivgui()->AddTickSignal(GetVPanel(), 250);
 	HOOK_HUD_MESSAGE(CHudBuildableManCannon, ManCannonMsg);
 	HOOK_HUD_MESSAGE(CHudBuildableManCannon, FF_BuildTimer);
 
@@ -305,6 +324,8 @@ void CHudBuildableManCannon::Init()
 
 void CHudBuildableManCannon::VidInit()
 {
+	FFQuantityPanel::OnTick();
+
 	m_bDeployed = false;
 	m_bDeploying = false;
 
@@ -317,71 +338,6 @@ void CHudBuildableManCannon::VidInit()
 	DisableItem(m_qiBuildProgress);
 
 	ApplyDisplayOptions();
-}
-
-void CHudBuildableManCannon::OnTick()
-{
-	FFQuantityPanel::OnTick();
-
-	return;
-
-	if (!engine->IsInGame())
-		return;
-
-	C_FFPlayer* pPlayer
-		= C_FFPlayer::GetLocalFFPlayer();
-
-	if (pPlayer->GetClassSlot() != CLASS_SCOUT)
-		return;
-
-	C_FFManCannon* pManCannon = pPlayer->GetManCannon();
-
-	bool bDeployed = pManCannon && pManCannon->IsBuilt();
-	bool bDeploying = pManCannon && !bDeployed;
-
-	// Update deploying state
-	if (bDeploying != m_bDeploying)
-	{
-		m_bDeploying = bDeploying;
-
-		// The true value is handled in the
-		// build timer for responsive updates
-
-		if (!m_bDeploying)
-			// We assume the player cancelled,
-			// which is overridden below if armed.
-			SetText(m_wsNotDeployed);
-
-		ApplyDisplayOptions();
-	}
-
-	// Update deployed state
-	if (bDeployed != m_bDeployed)
-	{
-		m_bDeployed = bDeployed;
-
-		if (m_bDeployed)
-		{
-			SetText(m_wsDeployed);
-			ShowItem(m_qiHealth);
-		}
-		else
-		{
-			SetText(m_wsNotDeployed);
-			HideItem(m_qiHealth);
-		}
-
-		ApplyDisplayOptions();
-	}
-
-	if (!m_bDeploying && !m_bDeployed)
-	{
-		// Not deployed or deploying, show if we have one
-		if (pPlayer && pPlayer->GetAmmoCount(AMMO_MANCANNON) > 0)
-			SetText(m_wsNotDeployed);
-		else
-			SetText(m_wsNotAvailable);
-	}
 }
 
 void CHudBuildableManCannon::Paint()
@@ -412,33 +368,36 @@ void CHudBuildableManCannon::MsgFunc_ManCannonMsg(
 
 	switch (state)
 	{
-		case BUILDSTATE_NOTBUILT:
-		{
-			m_bDeployed = false;
-			m_bDeploying = false;
-			SetText(m_wsNotDeployed);
-			HideItem(m_qiHealth);
-			DisableItem(m_qiBuildProgress);
-			break;
-		}
-		case BUILDSTATE_BUILDING:
-		{
-			m_bDeployed = false;
-			m_bDeploying = true;
-			SetText(m_wsDeploying);
-			DisableItem(m_qiHealth);
-			EnableItem(m_qiBuildProgress);
-			break;
-		}
-		case BUILDSTATE_BUILT:
-		{
-			m_bDeployed = true;
-			m_bDeploying = false;
-			SetText(m_wsDeployed);
-			ShowItem(m_qiHealth);
-			DisableItem(m_qiBuildProgress);
-			break;
-		}
+	case BUILDSTATE_NOTBUILT:
+	{
+		m_bDeployed = false;
+		m_bDeploying = false;
+		SetText(
+			m_bHasManCannon
+			? m_wsNotDeployed
+			: m_wsNotAvailable);
+		HideItem(m_qiHealth);
+		DisableItem(m_qiBuildProgress);
+		break;
+	}
+	case BUILDSTATE_BUILDING:
+	{
+		m_bDeployed = false;
+		m_bDeploying = true;
+		SetText(m_wsDeploying);
+		DisableItem(m_qiHealth);
+		EnableItem(m_qiBuildProgress);
+		break;
+	}
+	case BUILDSTATE_BUILT:
+	{
+		m_bDeployed = true;
+		m_bDeploying = false;
+		SetText(m_wsDeployed);
+		ShowItem(m_qiHealth);
+		DisableItem(m_qiBuildProgress);
+		break;
+	}
 	}
 
 	ApplyDisplayOptions();

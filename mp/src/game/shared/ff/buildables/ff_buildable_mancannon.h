@@ -48,6 +48,8 @@ public:
 	static CFFManCannon *CreateClientSideManCannon( const Vector& vecOrigin, const QAngle& vecAngles );
 
 	float m_flLastDamage;
+	bool m_bHasManCannon;
+	bool m_bCanHaveManCannon;
 #else
 	virtual void Spawn( void );
 	virtual void GoLive( void );
@@ -63,6 +65,8 @@ public:
 	JumpPadState_t	m_iCombatState;
 	float			m_flLastHeal;
 	CNetworkVar( float, m_flLastDamage );
+	CNetworkVar( bool, m_bHasManCannon );
+	CNetworkVar( bool, m_bCanHaveManCannon );
 
 	virtual bool CanSabotage( void ) const { return false; }
 	virtual bool IsSabotaged( void ) const { return false; }
@@ -72,9 +76,12 @@ public:
 
 	virtual void Explode(void) override;
 	virtual void Detonate( void );
-	virtual void DoExplosionDamage( void );
+	virtual void DoExplosionDamage(void);
 
-	static CFFManCannon *Create( const Vector& vecOrigin, const QAngle& vecAngles, CBaseEntity *pentOwner = NULL );
+	virtual void SetHasManCannon(bool bHasManCannon) { m_bHasManCannon = bHasManCannon; }
+	virtual void SetCanHaveManCannon(bool bCanHaveManCannon) { m_bCanHaveManCannon = bCanHaveManCannon; }
+
+	static CFFManCannon *Create( CBaseEntity *pOwner = NULL );
 #endif
 };
 

@@ -275,6 +275,17 @@ public:
 	void	SetLastSpawn( CBaseEntity *pEntity );
 
 public:
+	using BaseClass::GiveAmmo;
+	virtual int		GiveAmmo(int iCount, int iAmmoIndex, bool bSuppressSound = false) override;
+	
+	using BaseClass::RemoveAmmo;
+	virtual void	RemoveAmmo(int iCount, int iAmmoIndex) override;
+	
+private:
+	void			SetAmmoMaxCarry(int iAmmoMaxCarry, const char* szName);
+	void			SetAmmoMaxCarry(int iAmmoMaxCarry, int iAmmoIndex);
+
+public:
 	// Networked the random player class var -> Defrag
 	CNetworkVar( bool, m_fRandomPC );
 	int m_iNextClass;
@@ -394,6 +405,7 @@ public:
 	bool AnyActiveDispenserSabotages() const { return (m_iActiveSabotages & 1); }
 	bool AnyActiveSentrySabotages() const { return ((m_iActiveSabotages & 2) != 0); }
 	
+	bool IsManCannonBuilt() const;
 	bool IsBuilding( void ) const;
 	bool IsStaticBuilding( void ) const;
 	int GetCurrentBuild( void ) const;
@@ -405,6 +417,7 @@ public:
 	CFFManCannon *GetManCannon( void ) const;
 	CFFBuildableObject *GetBuildable( int iBuildable ) const;
 	CFFWeaponBase* GetLastFFWeapon(){ return m_pLastWeapon; }
+
 	void SetLastFFWeapon( CFFWeaponBase* _pLastWeapon ){ m_pLastWeapon = _pLastWeapon; }
 
 	void PreBuildGenericThink( void );	// *** NOT AN ACTUAL THINK FUNCTION ***

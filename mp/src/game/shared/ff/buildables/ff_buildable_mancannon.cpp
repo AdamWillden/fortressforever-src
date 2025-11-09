@@ -23,6 +23,7 @@
 
 #ifdef CLIENT_DLL
 	#include "c_playerresource.h"
+	#include "ff_hud_buildable_mancannon.h"
 
 	// for DrawSprite
 	#include "beamdraw.h"
@@ -41,8 +42,12 @@ IMPLEMENT_NETWORKCLASS_ALIASED( FFManCannon, DT_FFManCannon )
 BEGIN_NETWORK_TABLE( CFFManCannon, DT_FFManCannon )
 #ifdef CLIENT_DLL
 	RecvPropFloat( RECVINFO( m_flLastDamage ) ),
+	RecvPropBool( RECVINFO(m_bCanHaveManCannon) ),
+	RecvPropBool( RECVINFO(m_bHasManCannon) )
 #elif GAME_DLL
 	SendPropFloat( SENDINFO( m_flLastDamage ) ),
+	SendPropBool(SENDINFO(m_bCanHaveManCannon)),
+	SendPropBool(SENDINFO(m_bHasManCannon) )
 #endif
 END_NETWORK_TABLE()
 
@@ -88,6 +93,9 @@ CFFManCannon::CFFManCannon( void )
 	m_bUsePhysics = true;
 	m_flLastClientUpdate = 0;
 	m_iLastState = 0;
+
+	m_bCanHaveManCannon = false;
+	m_bHasManCannon = false;
 #endif
 
 	// Health
@@ -114,6 +122,14 @@ void CFFManCannon::OnDataChanged( DataUpdateType_t updateType )
 	if( updateType == DATA_UPDATE_CREATED )
 	{
 		SetNextClientThink( CLIENT_THINK_ALWAYS );
+	}
+
+	CHudBuildableManCannon* pHudBuildableMancannon = GET_HUDELEMENT(CHudBuildableManCannon);
+	if (pHudBuildableMancannon)
+	{
+		pHudBuildableMancannon->SetEnabled(m_bCanHaveManCannon);
+		pHudBuildableMancannon->SetHasManCannon(m_bHasManCannon);
+		pHudBuildableMancannon->SetTeamColor(m_iTeamNum);
 	}
 }
 
@@ -237,7 +253,6 @@ void CFFManCannon::GoLive( void )
 
 	CFFBuildableObject::GoLive();
 
-	m_bBuilt = true;
 	SetCollisionGroup( COLLISION_GROUP_PUSHAWAY );
 	AddSolidFlags(FSOLID_TRIGGER);
 	CollisionProp()->UseTriggerBounds(true, 5);
@@ -245,8 +260,8 @@ void CFFManCannon::GoLive( void )
 
 	// Take away what it cost to build
 	CFFPlayer *pOwner = GetOwnerPlayer();
-	if( pOwner )
-		pOwner->RemoveAmmo( 1, AMMO_MANCANNON );
+	
+	pOwner->RemoveAmmo( 1, AMMO_MANCANNON );
 
 	// caes: start health regen
 	if ( MANCANNON_HEALTH_REGEN > 0 )
@@ -255,6 +270,21 @@ void CFFManCannon::GoLive( void )
 		SetContextThink( &CFFManCannon::OnJumpPadThink, gpGlobals->curtime, "JumpPadThink" );
 	}
 	// caes
+
+	IPhysicsObject* pPhysics = VPhysicsGetObject();
+	if (pPhysics)
+	{
+		pPhysics->Wake();
+		pPhysics->EnableCollisions(true);
+		pPhysics->EnableMotion(m_bUsePhysics);
+		pPhysics->EnableGravity(m_bUsePhysics);
+		pPhysics->EnableDrag(m_bUsePhysics);
+
+		if (Classify() == CLASS_DETPACK)
+			pPhysics->SetMass(500.0f);
+		else if (Classify() == CLASS_MANCANNON)
+			pPhysics->SetMass(5000.0f);
+	}
 
 	CSingleUserRecipientFilter user(pOwner);
 	user.MakeReliable();
@@ -391,14 +421,14 @@ void CFFManCannon::OnObjectTouch( CBaseEntity *pOther )
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-CFFManCannon *CFFManCannon::Create( const Vector& vecOrigin, const QAngle& vecAngles, CBaseEntity *pentOwner )
+CFFManCannon *CFFManCannon::Create( CBaseEntity *pOwner )
 {
-	CFFManCannon *pObject = (CFFManCannon *)CBaseEntity::Create( "FF_ManCannon", vecOrigin, vecAngles, NULL );
+	CFFManCannon *pObject = static_cast<CFFManCannon*>(CBaseEntity::CreateNoSpawn("FF_ManCannon", vec3_origin, vec3_angle, pOwner));
 
-	pObject->m_hOwner.GetForModify() = pentOwner;
-	pObject->VPhysicsInitNormal( SOLID_VPHYSICS, pObject->GetSolidFlags(), true );
-	pObject->Spawn();
-
+	pObject->m_hOwner.GetForModify() = pOwner;
+	pObject->AddEffects(EF_NODRAW);
+	pObject->AddSolidFlags(FSOLID_NOT_SOLID);
+	
 	return pObject;
 }
 

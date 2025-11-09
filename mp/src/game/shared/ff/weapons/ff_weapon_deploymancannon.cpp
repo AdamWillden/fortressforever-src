@@ -293,19 +293,14 @@ bool CFFWeaponDeployManCannon::CanDeploy( void )
 {
 	CFFPlayer *pPlayer = GetPlayerOwner();
 
-	if( !pPlayer )
-		return false;
-
-	if( pPlayer->GetManCannon() )
-	{
 #ifdef CLIENT_DLL
+	if(pPlayer && pPlayer->IsManCannonBuilt() )
 		ClientPrintMsg( pPlayer, HUD_PRINTCENTER, "#FF_BUILDERROR_MANCANNON_ALREADYBUILT" );
 #endif
 
-		return false;
-	}
-
-	return BaseClass::CanDeploy();
+	return pPlayer
+		&& !pPlayer->IsManCannonBuilt()
+		&& BaseClass::CanDeploy();
 }
 
 //----------------------------------------------------------------------------
@@ -315,15 +310,9 @@ bool CFFWeaponDeployManCannon::CanBeSelected( void )
 {
 	CFFPlayer *pPlayer = GetPlayerOwner();
 
-	if( !pPlayer )
-		return false;
-
-	if( pPlayer->GetManCannon() )
-	{
-		return false;
-	}
-
-	return BaseClass::CanBeSelected();
+	return pPlayer 
+		&& !pPlayer->IsManCannonBuilt() 
+		&& BaseClass::CanBeSelected();
 }
 
 //----------------------------------------------------------------------------
@@ -363,11 +352,10 @@ bool CFFWeaponDeployManCannon::Deploy()
 			ClientPrint( pPlayer, HUD_PRINTCENTER, "#FF_ENGY_CANTDETMIDBUILD" );
 			return;
 		}
-
-		CFFManCannon* pJumpPadToDet = pPlayer->GetManCannon();
-		if ( pJumpPadToDet )
+		
+		if (pPlayer->IsManCannonBuilt())
 		{
-			pJumpPadToDet->DetonateNextFrame();
+			pPlayer->GetManCannon()->DetonateNextFrame();
 			ClientPrint(pPlayer, HUD_PRINTCENTER, "#FF_MANCANNON_DESTROYED");
 		}
 	}

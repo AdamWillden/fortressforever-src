@@ -79,6 +79,8 @@ namespace vgui
 		bool IsInPreviewMode();
 		// TODO void FlashColor(Color colorFlash);
 
+		void SetTeamColor(int iTeamNum);
+
 	protected:
 		static KeyValues* s_kvAmountDisplayOptions;
 
@@ -245,8 +247,6 @@ namespace vgui
 			int iRed, int iGreen, int iBlue, int iAlpha);
 		bool SetCustomTextColor(
 			int iRed, int iGreen, int iBlue, int iAlpha);
-
-		void SetTeamColor();
 
 		void RecalculatePanelColor();
 

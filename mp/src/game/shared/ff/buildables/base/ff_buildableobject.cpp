@@ -177,10 +177,9 @@ int CFFBuildableObject::GetTeamNumber()
 {
 	CFFPlayer *pOwner = GetOwnerPlayer();
 
-	if (!pOwner)
-		return TEAM_UNASSIGNED;
-
-	return pOwner->GetTeamNumber();
+	return pOwner
+		? pOwner->GetTeamNumber()
+		: TEAM_UNASSIGNED;
 }
 
 //-----------------------------------------------------------------------------
@@ -188,10 +187,7 @@ int CFFBuildableObject::GetTeamNumber()
 //-----------------------------------------------------------------------------
 CFFPlayer *CFFBuildableObject::GetOwnerPlayer( void )
 {
-	if( m_hOwner.Get() )
-		return ToFFPlayer( m_hOwner.Get() );
-
-	return NULL;
+	return ToFFPlayer( m_hOwner.Get() );
 }
 
 //-----------------------------------------------------------------------------
@@ -208,18 +204,6 @@ CFFTeam *CFFBuildableObject::GetOwnerTeam( void )
 		return static_cast< CFFTeam * >( pOwner->GetTeam() );
 	}
 	return NULL;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Get a buildables team id
-//-----------------------------------------------------------------------------
-int CFFBuildableObject::GetOwnerTeamId( void )
-{
-	CFFPlayer *pOwner = GetOwnerPlayer();
-	if( pOwner )
-		return pOwner->GetTeamNumber();
-
-	return TEAM_UNASSIGNED;
 }
 
 #ifdef CLIENT_DLL
@@ -262,37 +246,41 @@ void C_FFBuildableObject::OnDataChanged( DataUpdateType_t updateType )
 void C_FFBuildableObject::ClientThink( void )
 {
 	// This is to "smooth" the build helper models
-	if( m_bClientSideOnly )
+	if (!m_bClientSideOnly)
+		return;
+
+	C_FFPlayer* pPlayer = GetOwnerPlayer();
+	if (!pPlayer)
+		return;
+
+	float flBuildDist = 0.0f;
+
+	switch( Classify() )
 	{
-		C_FFPlayer *pPlayer = ToFFPlayer( m_hOwner.Get() );
-		if( !pPlayer )
-			return;
-
-		float flBuildDist = 0.0f;
-
-		switch( Classify() )
-		{
-			case CLASS_DISPENSER: flBuildDist = FF_BUILD_DISP_BUILD_DIST; break;
-			case CLASS_SENTRYGUN: flBuildDist = FF_BUILD_SG_BUILD_DIST; break;
-			case CLASS_DETPACK: flBuildDist = FF_BUILD_DET_BUILD_DIST; break;
-			case CLASS_MANCANNON: flBuildDist = FF_BUILD_MC_BUILD_DIST; break;
-			default: return; break;
-		}
-
-		Vector vecForward;
-		pPlayer->EyeVectors( &vecForward );
-		vecForward.z = 0.0f;
-		VectorNormalize( vecForward );
-
-		// Need to save off the z value before setting new origin
-		Vector vecOrigin = GetAbsOrigin();
-
-		// Compute a new origin in front of the player
-		Vector vecNewOrigin = pPlayer->GetAbsOrigin() + ( vecForward * ( flBuildDist + 16.0f ) );
-		vecNewOrigin.z = vecOrigin.z;
-
-		SetAbsOrigin( vecNewOrigin );
+		case CLASS_DISPENSER: flBuildDist = FF_BUILD_DISP_BUILD_DIST; break;
+		case CLASS_SENTRYGUN: flBuildDist = FF_BUILD_SG_BUILD_DIST; break;
+		case CLASS_DETPACK: flBuildDist = FF_BUILD_DET_BUILD_DIST; break;
+		case CLASS_MANCANNON: flBuildDist = FF_BUILD_MC_BUILD_DIST; break;
+		default: return; break;
 	}
+
+	// Get the direction the player is facing
+	Vector vecForward;
+	pPlayer->EyeVectors( &vecForward );
+	vecForward.z = 0.0f;
+	VectorNormalize( vecForward );
+
+	// Need to save off the z value before setting new origin
+	Vector vecOrigin = GetAbsOrigin();
+
+	// Compute a new origin in front of the player
+	Vector vecNewOrigin
+		= pPlayer->GetAbsOrigin()
+		+ ( vecForward * ( flBuildDist + 16.0f ) );
+
+	vecNewOrigin.z = vecOrigin.z;
+
+	SetAbsOrigin( vecNewOrigin );
 }
 
 //-----------------------------------------------------------------------------
@@ -311,7 +299,9 @@ RenderGroup_t C_FFBuildableObject::GetRenderGroup()
 //-----------------------------------------------------------------------------
 int C_FFBuildableObject::DrawModel( int flags )
 {
+	// We render the model with respect to who is looking at it.
 	C_FFPlayer *pPlayer = C_FFPlayer::GetLocalFFPlayer();
+
 	CMatRenderContextPtr pMatRenderContext(g_pMaterialSystem);
 
 	// render a spy icon during the transparency pass
@@ -481,6 +471,70 @@ CFFBuildableObject::~CFFBuildableObject( void )
 	}
 }
 
+void CFFBuildableObject::Deploy(
+	const Vector& vecOrigin,
+	const QAngle& vecAngles)
+{
+	SetAbsOrigin(vecOrigin);
+	SetAbsAngles(vecAngles);
+
+	SetModel(m_ppszModels[0]);
+
+	RemoveEffects(EF_NODRAW);
+	RemoveSolidFlags(FSOLID_NOT_SOLID);
+
+	Spawn();
+
+	if (VPhysicsGetObject())
+		return;
+
+	if (m_bUsePhysics)
+	{
+		VPhysicsInitNormal(SOLID_VPHYSICS, GetSolidFlags(), true);
+
+		SetMoveType(MOVETYPE_VPHYSICS);
+	}
+	else
+	{
+		VPhysicsInitStatic();
+
+		// So that doors collide with it
+		SetSolid(SOLID_VPHYSICS);
+		AddSolidFlags(FSOLID_FORCE_WORLD_ALIGNED);
+		SetMoveType(MOVETYPE_FLY);
+	}
+}
+
+void CFFBuildableObject::GoDormant()
+{
+	m_bBuilt = false;
+	m_bTakesDamage = true;
+	m_bTranslucent = true;
+
+	m_pFlickerer = NULL;
+
+	m_BuildableLocation[0] = 0;
+
+	m_flSabotageTime = 0;
+	m_hSaboteur = NULL;
+	m_bMaliciouslySabotaged = false;
+	m_iSaboteurTeamNumber = TEAM_UNASSIGNED;
+
+	m_bMarkedForDetonation = false;
+
+	SetContextThink(
+		&CFFBuildableObject::GoDormantFinish,
+		gpGlobals->curtime + gpGlobals->interval_per_tick,
+		"GoDormantFinish");
+}
+
+void CFFBuildableObject::GoDormantFinish()
+{
+	AddEffects(EF_NODRAW);
+	AddSolidFlags(FSOLID_NOT_SOLID);
+	VPhysicsDestroyObject();
+}
+
 /**
 @fn void Spawn( )
 @brief Do some generic stuff at spawn time (play sounds)
@@ -491,23 +545,7 @@ void CFFBuildableObject::Spawn( void )
 	VPROF_BUDGET( "CFFBuildableObject::Spawn", VPROF_BUDGETGROUP_FF_BUILDABLE );
 
 	// Set a team
-	if( GetOwnerPlayer() )
-		ChangeTeam( GetOwnerPlayer()->GetTeamNumber() );
-
-	if( m_bUsePhysics )
-	{
-		SetSolid( SOLID_VPHYSICS );
-		SetMoveType( MOVETYPE_VPHYSICS );
-	}
-	else
-	{
-		// So that doors collide with it
-		SetSolid( SOLID_VPHYSICS );		
-		AddSolidFlags( FSOLID_FORCE_WORLD_ALIGNED );
-		SetMoveType( MOVETYPE_FLY );
-
-		VPhysicsInitStatic();
-	}
+	ChangeTeam(GetTeamNumber());
 
 	SetCollisionGroup( COLLISION_GROUP_BUILDABLE_BUILDING );
 		
@@ -556,8 +594,6 @@ void CFFBuildableObject::Spawn( void )
 		pPhysics->EnableGravity( false );
 		pPhysics->EnableDrag( false );
 	}
-
-	m_bBuilt = false;	// |-- Mirv: Make sure we're in a state of not built
 }
 
 /**
@@ -571,7 +607,6 @@ void CFFBuildableObject::GoLive( void )
 
 	// Object is now built
 	m_bBuilt = true;
-
 
 	//Testing new collision group -Green Mushy
 	//SetCollisionGroup( COLLISION_GROUP_PLAYER );
@@ -588,23 +623,6 @@ void CFFBuildableObject::GoLive( void )
 		SetRenderMode( kRenderNormal );
 	}
 
-	/*
-	// React to physics!
-	if( m_bUsePhysics )
-	{
-		IPhysicsObject *pPhysics = VPhysicsGetObject();
-		if( pPhysics )
-		{
-			pPhysics->Wake();
-			pPhysics->EnableCollisions( true );
-			pPhysics->EnableMotion( true );
-			pPhysics->EnableGravity( true );
-			pPhysics->EnableDrag( true );			
-		}
-	}
-	//*/
-
-	//*
 	IPhysicsObject *pPhysics = VPhysicsGetObject();
 	if( pPhysics )
 	{
@@ -619,7 +637,6 @@ void CFFBuildableObject::GoLive( void )
 		else if( Classify() == CLASS_MANCANNON)
 			pPhysics->SetMass( 5000.0f );
 	}
-	//*/
 
 	m_flSabotageTime = 0;
 	m_hSaboteur = NULL;
@@ -784,12 +801,7 @@ void CFFBuildableObject::RemoveQuietly( void )
 		m_pFlickerer = NULL;
 	}
 
-	// Notify player to tell them they can build
-	// again and remove current owner
-	m_hOwner = NULL;
-
-	// Remove entity from game
-	UTIL_Remove( this );
+	GoDormant();
 }
 
 CFFBuildableObject *CFFBuildableObject::AttackerInflictorBuildable(CBaseEntity *pAttacker, CBaseEntity *pInflictor)
@@ -961,9 +973,6 @@ CFFBuildableObject *CFFBuildableObject::Create( const Vector& vecOrigin, const Q
 	// touch functions [and possibly other items] will work properly when activated by us
 	pObject->m_hOwner = pentOwner;
 
-	// Spawn the object
-	pObject->Spawn();
-
 	return pObject;
 }
 
@@ -993,15 +1002,10 @@ void CFFBuildableObject::Explode( void )
 	// Remove bounding box (other models follow this pattern...)
 	SetSolid( SOLID_NONE );
 
+	GoDormant();
+
 	// Do the explosion
 	DoExplosion();
-
-	// Notify player to tell them they can build
-	// again and remove current owner
-	m_hOwner = NULL;
-
-	// Remove entity from game 
-	UTIL_Remove( this );
 }
 
 /**

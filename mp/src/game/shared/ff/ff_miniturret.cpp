@@ -618,7 +618,7 @@ CBaseEntity *CFFMiniTurret::HackFindEnemy( void )
 		
 
 		// Check if lua will let us target this jumppad
-		if( pPlayer->GetManCannon() )
+		if( pPlayer->IsManCannonBuilt() )
 		{
 			CFFManCannon *pManCannon = pPlayer->GetManCannon();
 			
