@@ -843,11 +843,32 @@ int CFFPlayer::GetArmorPercentage( void ) const
 	return (int) flPerc;
 }
 
+bool CFFPlayer::IsDetpackBuilt() const
+{
+	CFFDetpack* pDetpack = GetDetpack();
+
+	return pDetpack && pDetpack->IsBuilt();
+}
+
+bool CFFPlayer::IsDispenserBuilt() const
+{
+	CFFDispenser* pDispenser = GetDispenser();
+
+	return pDispenser && pDispenser->IsBuilt();
+}
+
 bool CFFPlayer::IsManCannonBuilt() const
 {
-	CFFManCannon *pManCannon = GetManCannon();
-	
+	CFFManCannon* pManCannon = GetManCannon();
+
 	return pManCannon && pManCannon->IsBuilt();
+}
+
+bool CFFPlayer::IsSentryGunBuilt() const
+{
+	CFFSentryGun* pSentryGun = GetSentryGun();
+
+	return pSentryGun && pSentryGun->IsBuilt();
 }
 
 //-----------------------------------------------------------------------------

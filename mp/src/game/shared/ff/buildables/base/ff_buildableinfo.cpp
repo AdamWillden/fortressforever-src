@@ -154,7 +154,7 @@ CFFBuildableInfo::CFFBuildableInfo( CFFPlayer *pPlayer, int iBuildObject )
 	switch( iBuildObject )
 	{
 	case FF_BUILD_DISPENSER:
-		if(pPlayer->GetDispenser())
+		if(pPlayer->IsDispenserBuilt())
 			m_BuildResult = BUILD_ALREADYBUILT;
 		else if(pPlayer->GetAmmoCount( AMMO_CELLS ) < FF_BUILDCOST_DISPENSER)
 			m_BuildResult = BUILD_NEEDAMMO;
@@ -162,7 +162,7 @@ CFFBuildableInfo::CFFBuildableInfo( CFFPlayer *pPlayer, int iBuildObject )
 			break;
 		return;
 	case FF_BUILD_SENTRYGUN:
-		if(pPlayer->GetSentryGun())
+		if(pPlayer->IsSentryGunBuilt())
 			m_BuildResult = BUILD_ALREADYBUILT;
 		else if(pPlayer->GetAmmoCount( AMMO_CELLS ) < FF_BUILDCOST_SENTRYGUN)
 			m_BuildResult = BUILD_NEEDAMMO;
@@ -170,7 +170,7 @@ CFFBuildableInfo::CFFBuildableInfo( CFFPlayer *pPlayer, int iBuildObject )
 			break;
 		return;
 	case FF_BUILD_DETPACK:
-		if(pPlayer->GetDetpack())
+		if(pPlayer->IsDetpackBuilt())
 			m_BuildResult = BUILD_ALREADYBUILT;
 		else if(pPlayer->GetAmmoCount( AMMO_DETPACK ) < 1)
 			m_BuildResult = BUILD_NEEDAMMO;

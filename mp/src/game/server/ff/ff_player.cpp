@@ -1770,7 +1770,10 @@ void CFFPlayer::InitialSpawn( void )
 	// Bug #0001217: Instant death changing class to random pc even with cl_classautokill 0
 	engine->GetClientConVarValue( engine->IndexOfEdict( edict() ), "cl_classautokill" );
 
+	m_hDetpack = CFFDetpack::Create(this);
+	m_hDispenser = CFFDispenser::Create(this);
 	m_hManCannon = CFFManCannon::Create(this);
+	m_hSentryGun = CFFSentryGun::Create(this);
 
 	//DevMsg("CFFPlayer::InitialSpawn");
 }
@@ -2992,13 +2995,13 @@ void CFFPlayer::RemoveBuildables( void )
 	m_iWantBuild = FF_BUILD_NONE;
 
 	// Remove buildables if they exist
-	if( GetDispenser() )
+	if( IsDispenserBuilt() )
 		GetDispenser()->Cancel();
 
-	if( GetSentryGun() )
+	if( IsSentryGunBuilt() )
 		GetSentryGun()->Cancel();
 
-	if( GetDetpack() )
+	if( IsDetpackBuilt() )
 		GetDetpack()->Cancel();
 
 	if( IsManCannonBuilt() )
@@ -3351,9 +3354,9 @@ void CFFPlayer::PreBuildGenericThink( void )
 		*/
 
 		// See if the user has already built this item
-		if( ( (m_iWantBuild == FF_BUILD_DISPENSER) && GetDispenser()) ||
-			( (m_iWantBuild == FF_BUILD_SENTRYGUN) && GetSentryGun()) ||
-			( (m_iWantBuild == FF_BUILD_DETPACK) && GetDetpack()) ||
+		if( ( (m_iWantBuild == FF_BUILD_DISPENSER) && IsDispenserBuilt()) ||
+			( (m_iWantBuild == FF_BUILD_SENTRYGUN) && IsSentryGunBuilt()) ||
+			( (m_iWantBuild == FF_BUILD_DETPACK) && IsDetpackBuilt()) ||
 			( (m_iWantBuild == FF_BUILD_MANCANNON) && IsManCannonBuilt()) )
 		{
 			if (!m_bRequireRePressBuildable)
@@ -3463,20 +3466,14 @@ void CFFPlayer::PreBuildGenericThink( void )
 				{					
 					FF_SendHint( this, ENGY_BUILDDISP, 3, PRIORITY_NORMAL, "#FF_HINT_ENGY_BUILDDISP" );
 
-					// Changed to building straight on ground (Bug #0000191: Engy "imagines" SG placement, then lifts SG, then back to imagined position.)
-					CFFDispenser *pDispenser = CFFDispenser::Create( hBuildInfo.GetBuildOrigin(), hBuildInfo.GetBuildAngles(), this );
-					
 					// Set custom text
-					pDispenser->SetText( m_szCustomDispenserText );
+					m_hDispenser->SetText( m_szCustomDispenserText );
 
-					pDispenser->SetLocation(g_pGameRules->GetChatLocation(true, this));
-
-					// Mirv: Store future ground location + orientation
-					pDispenser->SetGroundOrigin( hBuildInfo.GetBuildOrigin() );
-					pDispenser->SetGroundAngles( hBuildInfo.GetBuildAngles() );
-
-					// Set network var
-					m_hDispenser = pDispenser;
+					m_hDispenser->SetOwnerEntity(this);
+					m_hDispenser->Deploy(hBuildInfo.GetBuildOrigin(), hBuildInfo.GetBuildAngles());
+					m_hDispenser->SetLocation(g_pGameRules->GetChatLocation(true, this));
+					m_hDispenser->SetGroundOrigin( hBuildInfo.GetBuildOrigin() );
+					m_hDispenser->SetGroundAngles( hBuildInfo.GetBuildAngles() );
 
 					// Set the time it takes to build
 					m_flBuildTime = gpGlobals->curtime + 2.0f;
@@ -3486,7 +3483,7 @@ void CFFPlayer::PreBuildGenericThink( void )
 					// Leaving the remove armour code in that function as you can't fiddle with armour vals via this exploit -> Defrag
 					RemoveAmmo( FF_BUILDCOST_DISPENSER, AMMO_CELLS );
 
-					Omnibot::Notify_DispenserBuilding(this, pDispenser);
+					Omnibot::Notify_DispenserBuilding(this, m_hDispenser);
 					
 					//m_bStaticBuilding = false; // AfterShock - Uncomment this for testing drop-and-run SGs / Dispensers! (also need SG_BUILDTIME raising)
 				}
@@ -3517,17 +3514,11 @@ void CFFPlayer::PreBuildGenericThink( void )
 					}			
 					// End hint code
 
-					// Changed to building straight on ground (Bug #0000191: Engy "imagines" SG placement, then lifts SG, then back to imagined position.)
-					CFFSentryGun *pSentryGun = CFFSentryGun::Create( hBuildInfo.GetBuildOrigin(), hBuildInfo.GetBuildAngles(), this );
-				
-					pSentryGun->SetLocation(g_pGameRules->GetChatLocation(true, this));
-
-					// Mirv: Store future ground location + orientation
-					pSentryGun->SetGroundOrigin( hBuildInfo.GetBuildOrigin() );
-					pSentryGun->SetGroundAngles( hBuildInfo.GetBuildAngles() );
-
-					// Set network var
-					m_hSentryGun = pSentryGun;
+					m_hSentryGun->SetOwnerEntity(this);
+					m_hSentryGun->Deploy(hBuildInfo.GetBuildOrigin(), hBuildInfo.GetBuildAngles());
+					m_hSentryGun->SetLocation(g_pGameRules->GetChatLocation(true, this));
+					m_hSentryGun->SetGroundOrigin( hBuildInfo.GetBuildOrigin() );
+					m_hSentryGun->SetGroundAngles( hBuildInfo.GetBuildAngles() );
 
 					// Set the time it takes to build
 					m_flBuildTime = gpGlobals->curtime + SG_BUILDTIME/*5.0f*/;	// |-- Mirv: Bug #0000127: when building a sentry gun the build finishes before the sound
@@ -3536,7 +3527,7 @@ void CFFPlayer::PreBuildGenericThink( void )
 					// Moved code to remove cells from CFFSentryGun::GoLive() to here -> Defrag
 					RemoveAmmo( FF_BUILDCOST_SENTRYGUN, AMMO_CELLS );
 
-					Omnibot::Notify_SentryBuilding(this, pSentryGun);
+					Omnibot::Notify_SentryBuilding(this, m_hSentryGun);
 
 					//m_bStaticBuilding = false; // AfterShock - Uncomment this for testing drop-and-run SGs / Dispensers! (also need SG_BUILDTIME raising)
 				}
@@ -3544,25 +3535,19 @@ void CFFPlayer::PreBuildGenericThink( void )
 
 				case FF_BUILD_DETPACK:
 				{
-					// Changed to building straight on ground (Bug #0000191: Engy "imagines" SG placement, then lifts SG, then back to imagined position.)
-					CFFDetpack *pDetpack = CFFDetpack::Create( hBuildInfo.GetBuildOrigin(), hBuildInfo.GetBuildAngles(), this );
-
-					pDetpack->SetLocation(g_pGameRules->GetChatLocation(true, this));
+					m_hDetpack->SetOwnerEntity(this);
+					m_hDetpack->Deploy(hBuildInfo.GetBuildOrigin(), hBuildInfo.GetBuildAngles());
+					m_hDetpack->SetLocation(g_pGameRules->GetChatLocation(true, this));
+					m_hDetpack->SetGroundOrigin( hBuildInfo.GetBuildOrigin() );
+					m_hDetpack->SetGroundAngles( hBuildInfo.GetBuildAngles() );
 
 					// Set the fuse time
-					pDetpack->m_iFuseTime = m_iDetpackTime;
-
-					// Mirv: Store future ground location + orientation
-					pDetpack->SetGroundOrigin( hBuildInfo.GetBuildOrigin() );
-					pDetpack->SetGroundAngles( hBuildInfo.GetBuildAngles() );
-
-					// Set network var
-					m_hDetpack = pDetpack;
+					m_hDetpack->m_iFuseTime = m_iDetpackTime;
 
 					// Set time it takes to build
-					m_flBuildTime = gpGlobals->curtime + 3.0f; // mulch: bug 0000337: build time 3 seconds for detpack
+					m_flBuildTime = gpGlobals->curtime + 3.0f;
 
-					Omnibot::Notify_DetpackBuilding(this, pDetpack);
+					Omnibot::Notify_DetpackBuilding(this, m_hDetpack);
 				}
 				break;
 
@@ -3682,58 +3667,46 @@ void CFFPlayer::PostBuildGenericThink( void )
 		{
 			case FF_BUILD_DISPENSER:
 			{
-				if( GetDispenser() )
+				GetDispenser()->GoLive();
+
+					switchToWeapon = FF_WEAPON_SPANNER;
+				IGameEvent *pEvent = gameeventmanager->CreateEvent( "build_dispenser" );
+				if( pEvent )
 				{
-					GetDispenser()->GoLive();
-
-					 switchToWeapon = FF_WEAPON_SPANNER;
-					IGameEvent *pEvent = gameeventmanager->CreateEvent( "build_dispenser" );
-					if( pEvent )
-					{
-						pEvent->SetInt( "userid", GetUserID() );
-						gameeventmanager->FireEvent( pEvent, true );
-					}	
+					pEvent->SetInt( "userid", GetUserID() );
+					gameeventmanager->FireEvent( pEvent, true );
+				}	
 					
-					FF_SendHint( this, ENGY_BUILTDISP, 3, PRIORITY_NORMAL, "#FF_HINT_ENGY_BUILTDISP" );
-
-
-				}
+				FF_SendHint( this, ENGY_BUILTDISP, 3, PRIORITY_NORMAL, "#FF_HINT_ENGY_BUILTDISP" );
 			}
 			break;
 
 			case FF_BUILD_SENTRYGUN:
 			{
-				if( GetSentryGun() )
+				GetSentryGun()->GoLive();
+
+				switchToWeapon = FF_WEAPON_SPANNER;
+				IGameEvent *pEvent = gameeventmanager->CreateEvent( "build_sentrygun" );
+				if( pEvent )
 				{
-					GetSentryGun()->GoLive();
-
-					switchToWeapon = FF_WEAPON_SPANNER;
-					IGameEvent *pEvent = gameeventmanager->CreateEvent( "build_sentrygun" );
-					if( pEvent )
-					{
-						pEvent->SetInt( "userid", GetUserID() );
-						gameeventmanager->FireEvent( pEvent, true );
-					}
-					
-					FF_SendHint( this, ENGY_BUILTSG, 3, PRIORITY_NORMAL, "#FF_HINT_ENGY_BUILTSG" );
-
+					pEvent->SetInt( "userid", GetUserID() );
+					gameeventmanager->FireEvent( pEvent, true );
 				}
+					
+				FF_SendHint( this, ENGY_BUILTSG, 3, PRIORITY_NORMAL, "#FF_HINT_ENGY_BUILTSG" );
 			}
 			break;
 
 			case FF_BUILD_DETPACK: 
 			{
-				if( GetDetpack() )
-				{
-					GetDetpack()->GoLive();
+				GetDetpack()->GoLive();
 
-					switchToWeapon = FF_WEAPON_GRENADELAUNCHER;
-					IGameEvent *pEvent = gameeventmanager->CreateEvent( "build_detpack" );
-					if( pEvent )
-					{
-						pEvent->SetInt( "userid", GetUserID() );
-						gameeventmanager->FireEvent( pEvent, true );
-					}
+				switchToWeapon = FF_WEAPON_GRENADELAUNCHER;
+				IGameEvent *pEvent = gameeventmanager->CreateEvent( "build_detpack" );
+				if( pEvent )
+				{
+					pEvent->SetInt( "userid", GetUserID() );
+					gameeventmanager->FireEvent( pEvent, true );
 				}
 			}
 			break;

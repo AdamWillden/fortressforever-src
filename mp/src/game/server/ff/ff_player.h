@@ -405,12 +405,17 @@ public:
 	bool AnyActiveDispenserSabotages() const { return (m_iActiveSabotages & 1); }
 	bool AnyActiveSentrySabotages() const { return ((m_iActiveSabotages & 2) != 0); }
 	
-	bool IsManCannonBuilt() const;
 	bool IsBuilding( void ) const;
 	bool IsStaticBuilding( void ) const;
 	int GetCurrentBuild( void ) const;
 	int GetWantBuild( void ) const	{ return m_iWantBuild; }
 	float GetBuildTime( void ) const { return m_flBuildTime; }
+
+	bool IsDetpackBuilt(void) const;
+	bool IsDispenserBuilt(void) const;
+	bool IsManCannonBuilt() const;
+	bool IsSentryGunBuilt(void) const;
+
 	CFFDetpack *GetDetpack( void ) const;
 	CFFDispenser *GetDispenser( void ) const;
 	CFFSentryGun *GetSentryGun( void ) const;

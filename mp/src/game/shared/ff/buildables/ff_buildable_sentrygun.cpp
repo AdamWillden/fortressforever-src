@@ -1954,18 +1954,16 @@ void CFFSentryGun::RecalculateAmmoPercent()
 //-----------------------------------------------------------------------------
 // Purpose: Creates the object
 //-----------------------------------------------------------------------------
-CFFSentryGun *CFFSentryGun::Create( const Vector &vecOrigin, const QAngle &vecAngles, CBaseEntity *pentOwner ) 
+CFFSentryGun *CFFSentryGun::Create(CBaseEntity* pOwner ) 
 {
 	// Create the object
-	CFFSentryGun *pObject = ( CFFSentryGun * )CBaseEntity::Create( "FF_SentryGun", vecOrigin, vecAngles, NULL );
-
-	// Set our faux owner - see CFFBuildable::Create for the reason why
-	pObject->m_hOwner = pentOwner;
-
-	//pObject->VPhysicsInitNormal( SOLID_VPHYSICS, pObject->GetSolidFlags(), true );
-
-	// Spawn the object
-	pObject->Spawn();
+	CFFSentryGun* pObject
+		= static_cast<CFFSentryGun*>(
+			CBaseEntity::CreateNoSpawn(
+				"FF_SentryGun",
+				vec3_origin,
+				vec3_angle,
+				pOwner));
 
 	return pObject;
 }

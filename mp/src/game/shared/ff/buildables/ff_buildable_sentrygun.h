@@ -223,7 +223,7 @@ public:
 	virtual void MaliciouslySabotage(CFFPlayer *pSaboteur);
 	virtual void Detonate();
 
-	static CFFSentryGun *Create( const Vector &vecOrigin, const QAngle &vecAngles, CBaseEntity *pentOwner = NULL );
+	static CFFSentryGun *Create( CBaseEntity *pOwner );
 
 	void DoMuzzleFlash( int iAttachment, const Vector& vecOrigin, const QAngle& vecAngles );
 	void DoRocketMuzzleFlash( int iAttachment, const Vector& vecOrigin, const QAngle& vecAngles );

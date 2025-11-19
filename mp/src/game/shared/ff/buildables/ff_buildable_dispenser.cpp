@@ -540,19 +540,17 @@ void CFFDispenser::Event_Killed( const CTakeDamageInfo &info )
 @param vecAngles - view angles of the object to be created
 @param pentOwner - edict_t of the owner creating the object (usually keep NULL)
 @return a _new_ CFFDispenser
-*/ 
-CFFDispenser *CFFDispenser::Create( const Vector &vecOrigin, const QAngle &vecAngles, CBaseEntity *pentOwner )
+*/
+CFFDispenser *CFFDispenser::Create(CBaseEntity* pOwner )
 {
 	// Create the object
-	CFFDispenser *pObject = ( CFFDispenser * )CBaseEntity::Create( "FF_Dispenser", vecOrigin, vecAngles, NULL );
-
-	// Set our faux owner - see CFFBuildable::Create for the reason why
-	pObject->m_hOwner.GetForModify() = pentOwner;
-
-	//pObject->VPhysicsInitNormal( SOLID_VPHYSICS, pObject->GetSolidFlags(), true );
-
-	// Spawn the object
-	pObject->Spawn();
+	CFFDispenser* pObject 
+		= static_cast<CFFDispenser*>(
+			CBaseEntity::CreateNoSpawn(
+				"FF_Dispenser",
+				vec3_origin,
+				vec3_angle,
+				pOwner ));
 
 	return pObject;
 }

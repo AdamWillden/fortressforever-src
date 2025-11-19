@@ -354,22 +354,20 @@ int CFFDetpack::TakeEmp( void )
 @param pentOwner - edict_t of the owner creating the object (usually keep NULL)
 @return a _new_ CFFDetpack
 */ 
-CFFDetpack *CFFDetpack::Create( const Vector &vecOrigin, const QAngle &vecAngles, CBaseEntity *pentOwner )
+CFFDetpack *CFFDetpack::Create(
+	CBaseEntity *pOwner)
 {
 	// Create the object
-	CFFDetpack *pObject = ( CFFDetpack * )CBaseEntity::Create( "FF_Detpack", vecOrigin, vecAngles, NULL );
-
-	// Set our faux owner - see CFFBuildable::Create for the reason why
-	pObject->m_hOwner.GetForModify() = pentOwner;
-
-	pObject->VPhysicsInitNormal( SOLID_VPHYSICS, pObject->GetSolidFlags(), true );
-
-	// Spawn the object
-	pObject->Spawn( );
+	CFFDetpack* pObject 
+		= static_cast<CFFDetpack*>(
+			CBaseEntity::CreateNoSpawn(
+				"FF_Detpack",
+				vec3_origin,
+				vec3_angle, 
+				pOwner));
 
 	return pObject;
 }
-
 
 //-----------------------------------------------------------------------------
 // Purpose: Overridden just to fire the appropriate event.

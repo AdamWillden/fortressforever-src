@@ -140,7 +140,7 @@ public:
 	void SetText( const char *szCustomText ) { Q_strcpy( m_szCustomText, szCustomText ); }
 	const char *GetText( void ) const { return m_szCustomText; }
 
-	static CFFDispenser *Create( const Vector &vecOrigin, const QAngle &vecAngles, CBaseEntity *pentOwner = NULL );
+	static CFFDispenser *Create( CBaseEntity *pOwner );
 
 	// These are for updating the user
 	virtual void	PhysicsSimulate();

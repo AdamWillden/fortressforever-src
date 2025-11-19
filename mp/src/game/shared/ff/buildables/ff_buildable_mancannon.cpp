@@ -421,11 +421,17 @@ void CFFManCannon::OnObjectTouch( CBaseEntity *pOther )
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-CFFManCannon *CFFManCannon::Create( CBaseEntity *pOwner )
+CFFManCannon *CFFManCannon::Create(
+	CBaseEntity *pOwner)
 {
-	CFFManCannon *pObject = static_cast<CFFManCannon*>(CBaseEntity::CreateNoSpawn("FF_ManCannon", vec3_origin, vec3_angle, pOwner));
-
-	pObject->m_hOwner.GetForModify() = pOwner;
+	CFFManCannon *pObject 
+		= static_cast<CFFManCannon*>(
+			CBaseEntity::CreateNoSpawn(
+				"FF_ManCannon", 
+				vec3_origin, 
+				vec3_angle, 
+				pOwner));
+	
 	pObject->AddEffects(EF_NODRAW);
 	pObject->AddSolidFlags(FSOLID_NOT_SOLID);
 	

@@ -67,7 +67,7 @@ public:
 	virtual int TakeEmp( void );
 	virtual void DoExplosionDamage();
 
-	static CFFDetpack *Create( const Vector &vecOrigin, const QAngle &vecAngles, CBaseEntity *pentOwner = NULL );
+	static CFFDetpack *Create( CBaseEntity *pOwner );
 
 	int		m_iFuseTime;
 	float	m_flDetonateTime;

@@ -589,7 +589,7 @@ CBaseEntity *CFFMiniTurret::HackFindEnemy( void )
 			continue;
 		
 		// Check if lua will let us target this sentrygun
-		if( pPlayer->GetSentryGun() )
+		if( pPlayer->IsSentryGunBuilt() )
 		{
 			CFFSentryGun *pSentryGun = pPlayer->GetSentryGun();
 			//CFFLuaObjectWrapper hValidTarget;
@@ -603,7 +603,7 @@ CBaseEntity *CFFMiniTurret::HackFindEnemy( void )
 		}
 
 		// Check if lua will let us target this dispenser
-		if( pPlayer->GetDispenser() )
+		if( pPlayer->IsDispenserBuilt() )
 		{
 			CFFDispenser *pDispenser = pPlayer->GetDispenser();
 			
@@ -615,7 +615,6 @@ CBaseEntity *CFFMiniTurret::HackFindEnemy( void )
 						pTarget = MiniTurret_IsBetterTarget( pTarget, pDispenser, ( pDispenser->GetAbsOrigin() - vecOrigin ).LengthSqr() );
 			}
 		}
-		
 
 		// Check if lua will let us target this jumppad
 		if( pPlayer->IsManCannonBuilt() )

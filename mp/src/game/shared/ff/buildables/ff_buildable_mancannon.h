@@ -81,7 +81,7 @@ public:
 	virtual void SetHasManCannon(bool bHasManCannon) { m_bHasManCannon = bHasManCannon; }
 	virtual void SetCanHaveManCannon(bool bCanHaveManCannon) { m_bCanHaveManCannon = bCanHaveManCannon; }
 
-	static CFFManCannon *Create( CBaseEntity *pOwner = NULL );
+	static CFFManCannon *Create( CBaseEntity *pOwner );
 #endif
 };
 
