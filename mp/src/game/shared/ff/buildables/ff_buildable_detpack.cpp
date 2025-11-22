@@ -206,9 +206,6 @@ void CFFDetpack::GoLive( void )
 	// Call base class
 	CFFBuildableObject::GoLive();
 
-	// Object is now built
-	m_bBuilt = true;
-
 	// Set up when we're supposed to blow up
 	float flCurTime = gpGlobals->curtime;
 	m_flDetonateTime = flCurTime + ( float )m_iFuseTime;
@@ -365,6 +362,8 @@ CFFDetpack *CFFDetpack::Create(
 				vec3_origin,
 				vec3_angle, 
 				pOwner));
+	
+	pObject->m_hOwner.GetForModify() = pOwner;
 
 	return pObject;
 }

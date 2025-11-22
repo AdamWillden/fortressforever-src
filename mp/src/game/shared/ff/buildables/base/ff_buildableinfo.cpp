@@ -10,7 +10,6 @@
 
 #include "cbase.h"
 #include "ff_buildableinfo.h"
-class CFFManCannon;
 
 #ifdef CLIENT_DLL
 	#include "c_ff_player.h"

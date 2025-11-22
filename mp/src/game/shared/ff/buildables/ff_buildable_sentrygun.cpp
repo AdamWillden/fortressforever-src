@@ -488,9 +488,6 @@ void CFFSentryGun::GoLive( void )
 	// Upgrade to level 1
 	Upgrade();
 
-	// Object is now built
-	m_bBuilt = true;
-
 	// Now use our stored ground location + orientation
 	SetAbsOrigin( m_vecGroundOrigin );
 	SetAbsAngles( m_angGroundAngles );
@@ -1964,6 +1961,8 @@ CFFSentryGun *CFFSentryGun::Create(CBaseEntity* pOwner )
 				vec3_origin,
 				vec3_angle,
 				pOwner));
+
+	pObject->m_hOwner.GetForModify() = pOwner;
 
 	return pObject;
 }

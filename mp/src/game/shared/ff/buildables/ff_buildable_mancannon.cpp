@@ -271,20 +271,20 @@ void CFFManCannon::GoLive( void )
 	}
 	// caes
 
-	IPhysicsObject* pPhysics = VPhysicsGetObject();
-	if (pPhysics)
-	{
-		pPhysics->Wake();
-		pPhysics->EnableCollisions(true);
-		pPhysics->EnableMotion(m_bUsePhysics);
-		pPhysics->EnableGravity(m_bUsePhysics);
-		pPhysics->EnableDrag(m_bUsePhysics);
+	//IPhysicsObject* pPhysics = VPhysicsGetObject();
+	//if (pPhysics)
+	//{
+	//	pPhysics->Wake();
+	//	pPhysics->EnableCollisions(true);
+	//	pPhysics->EnableMotion(m_bUsePhysics);
+	//	pPhysics->EnableGravity(m_bUsePhysics);
+	//	pPhysics->EnableDrag(m_bUsePhysics);
 
-		if (Classify() == CLASS_DETPACK)
-			pPhysics->SetMass(500.0f);
-		else if (Classify() == CLASS_MANCANNON)
-			pPhysics->SetMass(5000.0f);
-	}
+	//	if (Classify() == CLASS_DETPACK)
+	//		pPhysics->SetMass(500.0f);
+	//	else if (Classify() == CLASS_MANCANNON)
+	//		pPhysics->SetMass(5000.0f);
+	//}
 
 	CSingleUserRecipientFilter user(pOwner);
 	user.MakeReliable();
@@ -431,6 +431,8 @@ CFFManCannon *CFFManCannon::Create(
 				vec3_origin, 
 				vec3_angle, 
 				pOwner));
+
+	pObject->m_hOwner.GetForModify() = pOwner;
 	
 	pObject->AddEffects(EF_NODRAW);
 	pObject->AddSolidFlags(FSOLID_NOT_SOLID);
