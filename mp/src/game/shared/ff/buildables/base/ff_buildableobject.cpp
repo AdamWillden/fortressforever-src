@@ -524,7 +524,7 @@ void CFFBuildableObject::GoDormant()
 
 	SetContextThink(
 		&CFFBuildableObject::GoDormantFinish,
-		gpGlobals->curtime + gpGlobals->interval_per_tick,
+		gpGlobals->curtime + gpGlobals->interval_per_tick * 3,
 		"GoDormantFinish");
 }
 
