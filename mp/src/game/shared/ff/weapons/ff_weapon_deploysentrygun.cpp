@@ -261,13 +261,13 @@ bool CFFWeaponDeploySentryGun::CanBeSelected( void )
 			return;
 		}
 
-		CFFSentryGun *pSentry = pPlayer->GetSentryGun();
-
-		if (!pSentry) 
+		if (!pPlayer->IsSentryGunBuilt())
 		{
 			ClientPrint(pPlayer, HUD_PRINTCENTER, "#FF_ENGY_NOSENTRY");
 			return;
 		}
+
+		CFFSentryGun* pSentry = pPlayer->GetSentryGun();
 
 		if (pSentry->IsSabotaged())
 		{
@@ -298,20 +298,19 @@ bool CFFWeaponDeploySentryGun::CanBeSelected( void )
 			return;
 		}
 
-		// Bug #0000333: Buildable Behavior (non build slot) while building
 		if( pPlayer->IsBuilding() && ( pPlayer->GetCurrentBuild() == FF_BUILD_SENTRYGUN ) )
 		{
 			ClientPrint( pPlayer, HUD_PRINTCENTER, "#FF_ENGY_CANTDISMANTLEMIDBUILD" );
 			return;
 		}
 
-		CFFSentryGun *pSentry = pPlayer->GetSentryGun();
-
-		if (!pSentry) 
+		if (!pPlayer->IsSentryGunBuilt())
 		{
 			ClientPrint( pPlayer, HUD_PRINTCENTER, "#FF_ENGY_NOSENTRYTODISMANTLE" );
 			return;
 		}
+
+		CFFSentryGun *pSentry = pPlayer->GetSentryGun();
 
 		if (pSentry->IsSabotaged())
 		{
@@ -355,20 +354,19 @@ bool CFFWeaponDeploySentryGun::CanBeSelected( void )
 			return;
 		}
 
-		// Bug #0000333: Buildable Behavior (non build slot) while building
 		if( pPlayer->IsBuilding() && ( pPlayer->GetCurrentBuild() == FF_BUILD_SENTRYGUN ) )
 		{
 			ClientPrint( pPlayer, HUD_PRINTCENTER, "#FF_ENGY_CANTDETMIDBUILD" );
 			return;
 		}
 
-		CFFSentryGun *pSentry = pPlayer->GetSentryGun();
-
-		if (!pSentry) 
+		if (!pPlayer->IsSentryGunBuilt())
 		{
             ClientPrint(pPlayer, HUD_PRINTCENTER, "#FF_ENGY_NOSENTRYTODET");
 			return;
 		}
+
+		CFFSentryGun* pSentry = pPlayer->GetSentryGun();
 
 		if (pSentry->IsSabotaged())
 		{
@@ -392,20 +390,19 @@ bool CFFWeaponDeploySentryGun::CanBeSelected( void )
 			return;
 		}
 
-		// Bug #0000333: Buildable Behavior (non build slot) while building
 		if( pPlayer->IsBuilding() && ( pPlayer->GetCurrentBuild() == FF_BUILD_SENTRYGUN ) )
 		{
 			ClientPrint(pPlayer, HUD_PRINTCENTER, "#FF_ENGY_CANTDETMIDBUILD" );
 			return;
 		}
 
-		CFFSentryGun *pSentry = pPlayer->GetSentryGun();
-
-		if (!pSentry) 
+		if (!pPlayer->IsSentryGunBuilt())
 		{
             ClientPrint(pPlayer, HUD_PRINTCENTER, "#FF_ENGY_NOSENTRY" );
 			return;
 		}
+
+		CFFSentryGun* pSentry = pPlayer->GetSentryGun();
 
 		if (pSentry->IsSabotaged())
 		{

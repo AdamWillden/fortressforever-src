@@ -175,15 +175,7 @@ ADD_MENU_OPTION(builddispenser, "#FF_CM_BUILDDISPENSER", 'Q', "qdispenser")
 {
 	C_FFPlayer *ff = C_FFPlayer::GetLocalFFPlayer();
 
-	// Yeah, this is highly unlikely to happen, but just checking anyway
-	if( !ff )
-		return MENU_DIM;
-
-	// Bug #0000333: Buildable Behavior (non build slot) while building
-	if( ff->IsBuilding() && ( ff->GetCurrentBuild() == FF_BUILD_DISPENSER ) )
-		return MENU_DIM;
-
-	if (ff->GetDispenser())
+	if(!ff || ff->IsDispenserBuilt())
 		return MENU_DIM;
 
 	return MENU_SHOW;
@@ -193,15 +185,7 @@ ADD_MENU_OPTION(detdispenser, "#FF_CM_DETDISPENSER", 'P', "detdispenser")
 {
 	C_FFPlayer *ff = C_FFPlayer::GetLocalFFPlayer();
 
-	// Yeah, this is highly unlikely to happen, but just checking anyway
-	if( !ff )
-		return MENU_DIM;
-
-	// Bug #0000333: Buildable Behavior (non build slot) while building
-	if( ff->IsBuilding() && ( ff->GetCurrentBuild() == FF_BUILD_DISPENSER ) )
-		return MENU_DIM;
-
-	if (!ff->GetDispenser())
+	if(!ff || !ff->IsDispenserBuilt())
 		return MENU_DIM;
 
 	return MENU_SHOW;
@@ -211,15 +195,7 @@ ADD_MENU_OPTION(dismantledispenser, "#FF_CM_DISMANTLEDISPENSER", 'Q', "dismantle
 {
 	C_FFPlayer *ff = C_FFPlayer::GetLocalFFPlayer();
 
-	// Yeah, this is highly unlikely to happen, but just checking anyway
-	if( !ff )
-		return MENU_DIM;
-
-	// Bug #0000333: Buildable Behavior (non build slot) while building
-	if( ff->IsBuilding() && ( ff->GetCurrentBuild() == FF_BUILD_DISPENSER ) )
-		return MENU_DIM;
-
-	if (!ff->GetDispenser())
+	if(!ff || !ff->IsDispenserBuilt())
 		return MENU_DIM;
 
 	return MENU_SHOW;
@@ -229,15 +205,7 @@ ADD_MENU_OPTION(buildsentry, "#FF_CM_BUILDSENTRY", 'S', "qsentry")
 {
 	C_FFPlayer *ff = C_FFPlayer::GetLocalFFPlayer();
 
-	// Yeah, this is highly unlikely to happen, but just checking anyway
-	if( !ff )
-		return MENU_DIM;
-
-	// Bug #0000333: Buildable Behavior (non build slot) while building
-	if( ff->IsBuilding() && ( ff->GetCurrentBuild() == FF_BUILD_SENTRYGUN ) )
-		return MENU_DIM;
-
-	if (ff->GetSentryGun())
+	if(!ff || ff->IsSentryGunBuilt())
 		return MENU_DIM;
 
 	return MENU_SHOW;
@@ -247,15 +215,7 @@ ADD_MENU_OPTION(detsentry, "#FF_CM_DETSENTRY", 'R', "detsentry")
 {
 	C_FFPlayer *ff = C_FFPlayer::GetLocalFFPlayer();
 
-	// Yeah, this is highly unlikely to happen, but just checking anyway
-	if( !ff )
-		return MENU_DIM;
-
-	// Bug #0000333: Buildable Behavior (non build slot) while building
-	if( ff->IsBuilding() && ( ff->GetCurrentBuild() == FF_BUILD_SENTRYGUN ) )
-		return MENU_DIM;
-
-	if (!ff->GetSentryGun())
+	if(!ff || !ff->IsSentryGunBuilt())
 		return MENU_DIM;
 
 	return MENU_SHOW;
@@ -265,15 +225,7 @@ ADD_MENU_OPTION(dismantlesentry, "#FF_CM_DISMANTLESENTRY", 'S', "dismantlesentry
 {
 	C_FFPlayer *ff = C_FFPlayer::GetLocalFFPlayer();
 
-	// Yeah, this is highly unlikely to happen, but just checking anyway
-	if( !ff )
-		return MENU_DIM;
-
-	// Bug #0000333: Buildable Behavior (non build slot) while building
-	if( ff->IsBuilding() && ( ff->GetCurrentBuild() == FF_BUILD_SENTRYGUN ) )
-		return MENU_DIM;
-
-	if (!ff->GetSentryGun())
+	if(!ff || !ff->IsSentryGunBuilt())
 		return MENU_DIM;
 
 	return MENU_SHOW;
@@ -283,15 +235,7 @@ ADD_MENU_OPTION(aimsentry, "#FF_CM_AIMSENTRY", 'O', "aimsentry")
 {
 	C_FFPlayer *ff = C_FFPlayer::GetLocalFFPlayer();
 
-	// Yeah, this is highly unlikely to happen, but just checking anyway
-	if( !ff )
-		return MENU_DIM;
-
-	// Bug #0000333: Buildable Behavior (non build slot) while building
-	if( ff->IsBuilding() && ( ff->GetCurrentBuild() == FF_BUILD_SENTRYGUN ) )
-		return MENU_DIM;
-
-	if (!ff->GetSentryGun())
+	if(!ff || !ff->IsSentryGunBuilt())
 		return MENU_DIM;
 
 	return MENU_SHOW;

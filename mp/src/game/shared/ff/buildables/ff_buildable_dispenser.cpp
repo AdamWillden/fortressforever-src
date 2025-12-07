@@ -814,7 +814,7 @@ void CFFDispenser::Dismantle( CFFPlayer *pPlayer)
 
 	// Bug #0000426: Buildables Dismantle Sounds Missing
 	CPASAttenuationFilter sndFilter( this );
-	EmitSound( sndFilter, entindex(), "Dispenser.unbuild" );
+	EmitSound( sndFilter, entindex(), FF_DISPENSER_UNBUILD_SOUND);
 
 	// Fire an event.
 	IGameEvent *pEvent = gameeventmanager->CreateEvent("dispenser_dismantled");		

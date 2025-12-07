@@ -268,29 +268,19 @@ bool CFFWeaponDeployDispenser::CanBeSelected( void )
 			return;
 		}
 
-		// Bug #0000333: Buildable Behavior (non build slot) while building
 		if( pPlayer->IsBuilding() && ( pPlayer->GetCurrentBuild() == FF_BUILD_DISPENSER ) )
 		{
-			ClientPrint(pPlayer, HUD_PRINTCENTER, "#FF_ENGY_CANTDISMANTLEMIDBUILD");			
+			ClientPrint(pPlayer, HUD_PRINTCENTER, "#FF_ENGY_CANTDISMANTLEMIDBUILD");
 			return;
 		}
 
-		CFFDispenser *pDispenser = pPlayer->GetDispenser();
-
-		// can't dismantle what doesn't exist
-		if (!pDispenser)
+		if (!pPlayer->IsDispenserBuilt())
 		{
-			ClientPrint(pPlayer, HUD_PRINTCENTER, "#FF_ENGY_NODISPENSERTODISMANTLE");	
+			ClientPrint(pPlayer, HUD_PRINTCENTER, "#FF_ENGY_NODISPENSERTODISMANTLE");
 			return;
 		}
 
-		//Bug fix: dismantling a ghost dispenser 
-		//if the dispenser is in transparent form, dont dismantle it -GreenMushy
-		if( pDispenser->IsTransparent() )
-		{
-			ClientPrint(pPlayer, HUD_PRINTCENTER, "#FF_ENGY_CANTDISMANTLEMIDBUILD");			
-			return;
-		}
+		CFFDispenser* pDispenser = pPlayer->GetDispenser();
 
 		if (pDispenser->IsSabotaged())
 		{
@@ -315,28 +305,26 @@ bool CFFWeaponDeployDispenser::CanBeSelected( void )
 		if (!pPlayer)
 			return;
 
-		if( ! pPlayer->IsAlive() )
+		if( !pPlayer->IsAlive() )
 		{
 			ClientPrint( pPlayer, HUD_PRINTCENTER, "#FF_ENGY_CANTDETWHENDEAD" );
 			return;
 		}
 
-		// Bug #0000333: Buildable Behavior (non build slot) while building
 		if( pPlayer->IsBuilding() && ( pPlayer->GetCurrentBuild() == FF_BUILD_DISPENSER ) )
 		{
 			ClientPrint( pPlayer, HUD_PRINTCENTER, "#FF_ENGY_CANTDETMIDBUILD" );
 			return;
 		}
 
-		CFFDispenser *pDispenser = pPlayer->GetDispenser();
-
-		// can't detonate what we don't have
-		if (!pDispenser)
+		if (!pPlayer->IsDispenserBuilt())
 		{
 			ClientPrint(pPlayer, HUD_PRINTCENTER, "#FF_ENGY_NODISPENSERTODET");
 			return;
-		}			
-		
+		}
+
+		CFFDispenser* pDispenser = pPlayer->GetDispenser();
+
 		if (pDispenser->IsSabotaged())
 		{
 			ClientPrint(pPlayer, HUD_PRINTCENTER, "#FF_BUILDINGUNRESPONSIVE");
@@ -353,35 +341,25 @@ bool CFFWeaponDeployDispenser::CanBeSelected( void )
 		if (!pPlayer)
 			return;
 
-		if( ! pPlayer->IsAlive() )
+		if( !pPlayer->IsAlive() )
 		{
 			ClientPrint( pPlayer, HUD_PRINTCENTER, "#FF_ENGY_CANTDISMANTLEORDETWHENDEAD" );
 			return;
 		}
 
-		// Bug #0000333: Buildable Behavior (non build slot) while building
 		if( pPlayer->IsBuilding() && ( pPlayer->GetCurrentBuild() == FF_BUILD_DISPENSER ) )
 		{
             ClientPrint( pPlayer, HUD_PRINTCENTER, "#FF_ENGY_CANTDISMANTLEMIDBUILD" );
 			return;
 		}
 
-		CFFDispenser *pDispenser = pPlayer->GetDispenser();
-
-		// can't do owt to it 'cause it doesn't exist!
-		if (!pDispenser)
+		if (!pPlayer->IsDispenserBuilt())
 		{
             ClientPrint(pPlayer, HUD_PRINTCENTER, "#FF_ENGY_NODISPENSER");
 			return;
 		}
 
-		//Bug fix: dismantling a ghost dispenser 
-		//if the dispenser is in transparent form, dont dismantle it -GreenMushy
-		if( pDispenser->IsTransparent() )
-		{
-			ClientPrint(pPlayer, HUD_PRINTCENTER, "#FF_ENGY_CANTDISMANTLEMIDBUILD");			
-			return;
-		}
+		CFFDispenser* pDispenser = pPlayer->GetDispenser();
 
 		if (pDispenser->IsSabotaged())
 		{
@@ -389,7 +367,6 @@ bool CFFWeaponDeployDispenser::CanBeSelected( void )
 			return;
 		}
 
-		//The previous IsBuilt function didnt seem to work so i removed it -GreenMushy
 		if (pDispenser->CloseEnoughToDismantle(pPlayer))
 		{
             pDispenser->Dismantle(pPlayer);

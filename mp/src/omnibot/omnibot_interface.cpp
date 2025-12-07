@@ -1433,12 +1433,12 @@ namespace Omnibot
 					}
 				case CLASS_SENTRYGUN:
 					{
-						CFFSentryGun *pBuildable = static_cast<CFFSentryGun*>(pEntity);
-						if(!pBuildable->IsBuilt())
+						CFFSentryGun *pSentryGun = static_cast<CFFSentryGun*>(pEntity);
+						if(!pSentryGun->IsBuilt())
 							_flags.SetFlag(TF_ENT_FLAG_BUILDINPROGRESS);
-						if(pBuildable->GetLevel()==2)
+						if(pSentryGun->GetLevel()==2)
 							_flags.SetFlag(TF_ENT_FLAG_LEVEL2);
-						else if(pBuildable->GetLevel()==3)
+						else if(pSentryGun->GetLevel()==3)
 							_flags.SetFlag(TF_ENT_FLAG_LEVEL3);
 						_flags.SetFlag(ENT_FLAG_VISTEST);
 						break;
