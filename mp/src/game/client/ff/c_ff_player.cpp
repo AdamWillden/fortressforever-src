@@ -5,6 +5,7 @@
 //=============================================================================//
 
 #include "cbase.h"
+#include "ff_hud_timer_build.h"
 #include "input.h"
 #include "c_ff_player.h"
 #include "ff_weapon_base.h"
@@ -667,7 +668,15 @@ END_RECV_TABLE()
 #undef max
 #define max(a,b)  (((a) > (b)) ? (a) : (b))
 
+BEGIN_RECV_TABLE_NOBASE(FFBuildTimerStatus, DT_FFBuildTimerStatus)
+	RecvPropInt(RECVINFO(m_iType)),
+	RecvPropFloat(RECVINFO(m_flStart)),
+	RecvPropFloat(RECVINFO(m_flEnd)),
+END_RECV_TABLE()
+
 BEGIN_RECV_TABLE_NOBASE(C_FFPlayer, DT_FFLocalPlayerExclusive)
+	// BuildTimer
+	RecvPropDataTable(RECVINFO_DT(m_buildTimerStatus), 0, &REFERENCE_RECV_TABLE(DT_FFBuildTimerStatus)),
 
 #ifdef EXTRA_LOCAL_ORIGIN_ACCURACY
 RecvPropVector(RECVINFO_NAME(m_vecNetworkOrigin, m_vecOrigin)),
@@ -2378,6 +2387,14 @@ void C_FFPlayer::OnPreDataChanged(DataUpdateType_t updateType)
 void C_FFPlayer::OnDataChanged(DataUpdateType_t type)
 {
 	BaseClass::OnDataChanged(type);
+
+	if (IsLocalPlayer())
+	{
+		// BuildTimer
+		CHudTimerBuild *pBuildTimer = GET_HUDELEMENT(CHudTimerBuild);
+		if (pBuildTimer)
+			pBuildTimer->UpdateFromPlayer(this);
+	}
 
 	if (type == DATA_UPDATE_CREATED)
 	{

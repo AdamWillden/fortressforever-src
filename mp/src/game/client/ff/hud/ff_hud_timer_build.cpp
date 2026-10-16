@@ -2,8 +2,9 @@
 
 #include "ff_hud_timer_build.h"
 
+using namespace vgui;
+
 DECLARE_HUDELEMENT(CHudTimerBuild);
-DECLARE_HUD_MESSAGE(CHudTimerBuild, FF_BuildTimer);
 
 CHudTimerBuild::CHudTimerBuild(const char* pElementName)
 	: CHudElement(pElementName), BaseClass(NULL, "HudTimerBuild")
@@ -15,6 +16,7 @@ CHudTimerBuild::CHudTimerBuild(const char* pElementName)
 	m_flDuration = 0.0f;
 	m_flStartTime = 0.0f;
 	m_bInvertScale = false;
+	m_bShowPanel = true;
 
 	m_iBuildType = FF_BUILD_NONE;
 
@@ -113,14 +115,7 @@ void CHudTimerBuild::ApplyStyleData(
 			kvDefaultPanelSpecificValues);
 
 	if (iShowPanel != -1)
-	{
 		m_bShowPanel = (iShowPanel == 1);
-
-		if (m_bShowPanel)
-			SetHiddenBits(HIDEHUD_PLAYERDEAD);
-		else
-			SetHiddenBits(HIDEHUD_ALWAYS);
-	}
 
 	if (iInvertScale != -1)
 	{
@@ -138,13 +133,24 @@ void CHudTimerBuild::ApplyStyleData(
 			: DISPLAY_PERCENTAGE);
 	}
 
-	if (IsInPreviewMode())
+	ApplyDisplayOptions();
+}
+
+void CHudTimerBuild::ApplyDisplayOptions()
+{
+	if (m_bShowPanel)
 	{
-		SetHiddenBits(0);
+		if (IsInPreviewMode())
+			SetHiddenBits(0);
+		else if (m_iBuildType != FF_BUILD_NONE
+			&& gpGlobals->curtime < m_flStartTime + m_flDuration)
+			SetHiddenBits(HIDEHUD_PLAYERDEAD);
+		else
+			SetHiddenBits(HIDEHUD_ALWAYS);
 	}
-	else if (m_bShowPanel)
+	else
 	{
-		SetHiddenBits(HIDEHUD_PLAYERDEAD);
+		SetHiddenBits(HIDEHUD_ALWAYS);
 	}
 }
 
@@ -159,12 +165,17 @@ void CHudTimerBuild::VidInit()
 
 	SetHeaderText(tempString);
 	SetHeaderIconChar('f');
+	m_iBuildType = FF_BUILD_NONE;
+	m_flStartTime = 0;
+	m_flDuration = 0;
+	m_qiTimer->SetAmount(0);
+	ApplyDisplayOptions();
+	UpdateFromPlayer(C_FFPlayer::GetLocalFFPlayer());
 }
 
 void CHudTimerBuild::Init()
 {
 	ivgui()->AddTickSignal(GetVPanel(), 250);
-	HOOK_HUD_MESSAGE(CHudTimerBuild, FF_BuildTimer);
 
 	m_qiTimer = AddItem("HudTimerBuildTimeLeft");
 	m_qiTimer->SetIcon('f');
@@ -184,72 +195,62 @@ void CHudTimerBuild::Init()
 
 void CHudTimerBuild::Paint()
 {
-	float flTimeElapsed
-		= gpGlobals->curtime - m_flStartTime;
+	const float flTimeElapsed = clamp(gpGlobals->curtime - m_flStartTime, 0.0f, m_flDuration);
+	if (m_bInvertScale)
+		m_qiTimer->SetAmount(m_flDuration - flTimeElapsed);
+	else
+		m_qiTimer->SetAmount(flTimeElapsed);
 
-	if (m_flDuration > flTimeElapsed)
-	{
-		m_qiTimer->SetAmount(
-			m_bInvertScale
-			? (m_flDuration - flTimeElapsed)
-			: flTimeElapsed);
-	}
-	else if (!IsInPreviewMode())
-	{
-		SetHiddenBits(HIDEHUD_ALWAYS);
-	}
-
+	ApplyDisplayOptions();
 	BaseClass::Paint();
 }
 
-void CHudTimerBuild::MsgFunc_FF_BuildTimer(
-	bf_read& msg)
+void CHudTimerBuild::UpdateFromPlayer(const C_FFPlayer* pPlayer)
 {
-	int iBuildType = msg.ReadShort();
-	float flDuration = msg.ReadFloat();
+	if (!pPlayer || !m_qiTimer)
+		return;
 
-	SetBuildTimer(iBuildType, flDuration);
-}
+	const FFBuildTimerStatus& status = pPlayer->GetBuildTimerStatus();
 
-void CHudTimerBuild::SetBuildTimer(
-	int iBuildType,
-	float flDuration)
-{
-	if (m_iBuildType != iBuildType)
-	{
-		m_iBuildType = iBuildType;
-		switch (iBuildType)
-		{
-		case FF_BUILD_NONE:
-			if (!IsInPreviewMode())
-				SetHiddenBits(HIDEHUD_ALWAYS);
-			return;
-		case FF_BUILD_DISPENSER:
-			SetHeaderIconChar('4');
-			break;
-		case FF_BUILD_SENTRYGUN:
-			SetHeaderIconChar('1');
-			break;
-		case FF_BUILD_DETPACK:
-			SetHeaderIconChar('5');
-			break;
-		case FF_BUILD_MANCANNON:
-			SetHeaderIconChar('6');
-			break;
-		}
-	}
+	const int iBuildType = status.m_iType;
+	const float flStartTime = status.m_flStart;
+	const float flDuration = MAX(0.0f, status.m_flEnd - flStartTime);
+	const bool bStateUnchanged =
+		m_iBuildType == iBuildType
+		&& m_flStartTime == flStartTime
+		&& m_flDuration == flDuration;
 
-	if (!IsInPreviewMode())
-	{
-		SetHiddenBits(HIDEHUD_PLAYERDEAD);
-	}
+	if (bStateUnchanged)
+		return;
 
-	m_flStartTime = gpGlobals->curtime;
+	m_iBuildType = iBuildType;
+	m_flStartTime = flStartTime;
 	m_flDuration = flDuration;
 
-	m_qiTimer->SetAmountMax(m_flDuration);
-	m_qiTimer->SetAmount(
-		m_bInvertScale
-		? 0
-		: m_flDuration);
+	switch (m_iBuildType)
+	{
+	case FF_BUILD_DISPENSER:
+		SetHeaderIconChar('4');
+		break;
+	case FF_BUILD_SENTRYGUN:
+		SetHeaderIconChar('1');
+		break;
+	case FF_BUILD_DETPACK:
+		SetHeaderIconChar('5');
+		break;
+	case FF_BUILD_MANCANNON:
+		SetHeaderIconChar('6');
+		break;
+	default:
+		SetHeaderIconChar('f');
+		break;
+	}
+
+	m_qiTimer->SetAmountMax(MAX(0.001f, m_flDuration));
+	if (m_bInvertScale)
+		m_qiTimer->SetAmount(m_flDuration);
+	else
+		m_qiTimer->SetAmount(0);
+
+	ApplyDisplayOptions();
 }

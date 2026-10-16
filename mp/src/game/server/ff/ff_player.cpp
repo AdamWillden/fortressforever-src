@@ -424,7 +424,15 @@ BEGIN_SEND_TABLE_NOBASE( CFFPlayer, DT_FFPlayerObserver )
 	SendPropInt(SENDINFO(m_nButtons)),
 END_SEND_TABLE()
 
+BEGIN_SEND_TABLE_NOBASE(FFBuildTimerStatus, DT_FFBuildTimerStatus)
+	SendPropInt(SENDINFO(m_iType), 3, SPROP_UNSIGNED),
+	SendPropFloat(SENDINFO(m_flStart), 0, SPROP_NOSCALE),
+	SendPropFloat(SENDINFO(m_flEnd), 0, SPROP_NOSCALE),
+END_SEND_TABLE()
+
 BEGIN_SEND_TABLE_NOBASE( CFFPlayer, DT_FFLocalPlayerExclusive )
+	// BuildTimer
+	SendPropDataTable(SENDINFO_DT(m_buildTimerStatus), &REFERENCE_SEND_TABLE(DT_FFBuildTimerStatus)),
 
 #ifdef EXTRA_LOCAL_ORIGIN_ACCURACY
 	SendPropVector(SENDINFO(m_vecOrigin), 32,  SPROP_CHANGES_OFTEN, 0.0f, HIGH_DEFAULT),
@@ -892,9 +900,23 @@ void CFFPlayer::PreThink(void)
 	BaseClass::PreThink();
 }
 
+void CFFPlayer::UpdateBuildTimerStatus()
+{
+	if (m_buildTimerStatus.m_iType == FF_BUILD_NONE)
+		return;
+
+	// Clear the timer if the player dies, the activity stops, or time runs out.
+	if (!IsAlive() || (!m_bBuilding && !m_hSabotaging)
+		|| gpGlobals->curtime >= m_buildTimerStatus.m_flEnd)
+	{
+		m_buildTimerStatus.Clear();
+	}
+}
+
 void CFFPlayer::PostThink()
 {
 	BaseClass::PostThink();
+	UpdateBuildTimerStatus();
 
 	if( GetTeamNumber() < FF_TEAM_BLUE )
 	{
@@ -2174,12 +2196,7 @@ void CFFPlayer::Event_Killed( const CTakeDamageInfo &info )
 		m_iWantBuild = FF_BUILD_NONE;
 
 		// Mirv: Cancel build timer
-		CSingleUserRecipientFilter user(this);
-		user.MakeReliable();
-		UserMessageBegin(user, "FF_BuildTimer");
-		WRITE_SHORT(m_iCurBuild);
-		WRITE_FLOAT(0);
-		MessageEnd();
+		m_buildTimerStatus.Clear();
 	}
 
 	// If the tag is still active, award a point
@@ -3876,12 +3893,7 @@ void CFFPlayer::PreBuildGenericThink( void )
 			}
 
 			// Mirv: Start build timer
-			CSingleUserRecipientFilter user( this );
-			user.MakeReliable();
-			UserMessageBegin( user, "FF_BuildTimer" );
-				WRITE_SHORT( m_iCurBuild );
-				WRITE_FLOAT( m_flBuildTime - gpGlobals->curtime );
-			MessageEnd();
+			m_buildTimerStatus.Set(m_iCurBuild, m_flBuildTime - gpGlobals->curtime, gpGlobals->curtime);
 		}
 		else
 		{
@@ -3930,12 +3942,7 @@ void CFFPlayer::PreBuildGenericThink( void )
 				UnlockPlayer();
 
 				// Mirv: Cancel build timer
-				CSingleUserRecipientFilter user(this);
-				user.MakeReliable();
-				UserMessageBegin(user, "FF_BuildTimer");
-				WRITE_SHORT(FF_BUILD_NONE);
-				WRITE_FLOAT(0);
-				MessageEnd();
+				m_buildTimerStatus.Clear();
 
 				// Re-initialize
 				m_iCurBuild = FF_BUILD_NONE;
@@ -7842,7 +7849,7 @@ void CFFPlayer::SpySabotageThink()
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: sends the start sabotage timer message
+// Purpose: updates the owner's sabotage timer
 //-----------------------------------------------------------------------------
 void CFFPlayer::SpyStartSabotaging(CFFBuildableObject *pBuildable)
 {
@@ -7860,12 +7867,7 @@ void CFFPlayer::SpyStartSabotaging(CFFBuildableObject *pBuildable)
 	else
 		iBuildableType = FF_BUILD_DISPENSER;
 
-	CSingleUserRecipientFilter user(this);
-	user.MakeReliable();
-	UserMessageBegin(user, "FF_BuildTimer");
-	WRITE_SHORT(iBuildableType);
-	WRITE_FLOAT(3.0f);
-	MessageEnd();
+	m_buildTimerStatus.Set(iBuildableType, 3.0f, gpGlobals->curtime);
 
 	// Now remember what we're sabotaging
 	m_hSabotaging = pBuildable;
@@ -7874,19 +7876,14 @@ void CFFPlayer::SpyStartSabotaging(CFFBuildableObject *pBuildable)
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: sends the start sabotage timer message
+// Purpose: updates the owner's sabotage timer
 //-----------------------------------------------------------------------------
 void CFFPlayer::SpyStopSabotaging()
 {
 	if (!m_hSabotaging)
 		return;
 
-	CSingleUserRecipientFilter user(this);
-	user.MakeReliable();
-	UserMessageBegin(user, "FF_BuildTimer");
-	WRITE_SHORT(0);
-	WRITE_FLOAT(0);
-	MessageEnd();
+	m_buildTimerStatus.Clear();
 
 	// Remember that we aren't sabotaging
 	m_hSabotaging = NULL;

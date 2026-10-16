@@ -13,6 +13,7 @@
 #include "ff_playeranimstate.h"
 #include "c_baseplayer.h"
 #include "ff_shareddefs.h"
+#include "ff_buildtimer_status.h"
 #include "baseparticleentity.h"
 #include "ff_esp_shared.h"
 #include "ff_mapguide.h"
@@ -210,6 +211,9 @@ protected:
 	CNetworkHandle(C_FFDetpack, m_hDetpack);
 	CNetworkHandle(C_FFManCannon, m_hManCannon);
 
+	// BuildTimer
+	FFBuildTimerStatus m_buildTimerStatus;
+
 	// Used for seeing if a player is currently
 	// trying to build a detpack, dispenser, or sentry gun
 	CNetworkVar(bool, m_bStaticBuilding);
@@ -229,7 +233,9 @@ public:
 	C_FFSentryGun* GetSentryGun(void) const;
 	C_FFManCannon* GetManCannon(void) const;
 	C_FFBuildableObject* GetBuildable(int iBuildable) const;
-	// End: Added by Mulchman for building objects and such
+	
+	// BuildTimer
+	const FFBuildTimerStatus& GetBuildTimerStatus() const { return m_buildTimerStatus; }
 
 	// Gets the entity at player's current objective (set by Lua)
 	CBaseEntity* GetCurrObjectiveEntity(void) { return dynamic_cast<CBaseEntity*>(m_hObjectiveEntity.Get()); }

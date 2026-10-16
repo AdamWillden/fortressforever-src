@@ -1,5 +1,5 @@
-#ifndef FF_HUDBUILDSTATEDETPACK_H
-#define FF_HUDBUILDSTATEDETPACK_H
+#ifndef FF_HUD_TIMER_BUILD_H
+#define FF_HUD_TIMER_BUILD_H
 
 #include "ff_quantitypanel.h"
 #include "hudelement.h"
@@ -9,17 +9,18 @@
 #include "c_ff_player.h"
 #include "iclientmode.h"
 
-using namespace vgui;
-
 class CHudTimerBuild
-	: public CHudElement, public FFQuantityPanel
+	: public CHudElement, public vgui::FFQuantityPanel
 {
+public:
+	void UpdateFromPlayer(const C_FFPlayer* pPlayer);
+
 private:
-	DECLARE_CLASS_SIMPLE(CHudTimerBuild, FFQuantityPanel);
+	DECLARE_CLASS_SIMPLE(CHudTimerBuild, vgui::FFQuantityPanel);
 	CHudTimerBuild(const char* pElementName);
 	~CHudTimerBuild();
 
-	FFQuantityItem* m_qiTimer;
+	vgui::FFQuantityItem* m_qiTimer;
 
 	int m_iBuildType;
 	float m_flStartTime;
@@ -39,9 +40,7 @@ private:
 	void VidInit();
 
 	void Paint() override;
-
-	void MsgFunc_FF_BuildTimer(bf_read& msg);
-	void SetBuildTimer(int iBuildType, float flDuration = 0);
+	void ApplyDisplayOptions();
 };
 
 #endif

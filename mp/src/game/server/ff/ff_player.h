@@ -15,6 +15,7 @@
 
 #include "ff_playeranimstate.h"
 #include "ff_shareddefs.h"
+#include "ff_buildtimer_status.h"
 #include "ff_playerclass_parse.h"
 #include "ff_esp_shared.h"
 #include "utlvector.h"
@@ -408,6 +409,10 @@ protected:
 	CNetworkHandle( CFFSentryGun, m_hSentryGun );
 	CNetworkHandle( CFFDetpack, m_hDetpack );
 	CNetworkHandle( CFFManCannon, m_hManCannon );
+
+    // BuildTimer
+	CNetworkVarEmbedded(FFBuildTimerStatus, m_buildTimerStatus);
+	void UpdateBuildTimerStatus();
 
 	// Used for seeing if a player is currently
 	// trying to build a detpack, dispenser, or sentry gun
