@@ -51,15 +51,10 @@ public:
 #else
 	virtual void Spawn( void );
 	virtual void GoLive( void );
-	virtual void RemoveQuietly(void);
 
 	void OnObjectTouch( CBaseEntity *pOther );
 	void OnJumpPadThink( void );
 
-	// These are for updating the user
-	virtual void	PhysicsSimulate();
-	float			m_flLastClientUpdate;
-	int				m_iLastState;
 	JumpPadState_t	m_iCombatState;
 	float			m_flLastHeal;
 	CNetworkVar( float, m_flLastDamage );
@@ -70,7 +65,6 @@ public:
 	virtual void Sabotage( CFFPlayer *pSaboteur ) {};
 	virtual void MaliciouslySabotage( CFFPlayer *pSaboteur ) { m_bMaliciouslySabotaged = true; m_flSabotageTime = gpGlobals->curtime + 8.0f; }
 
-	virtual void Explode(void) override;
 	virtual void Detonate( void );
 	virtual void DoExplosionDamage( void );
 

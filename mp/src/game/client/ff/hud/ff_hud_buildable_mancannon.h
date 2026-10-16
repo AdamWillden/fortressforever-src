@@ -9,22 +9,28 @@
 #include "c_ff_player.h"
 #include "iclientmode.h"
 
-using namespace vgui;
 using namespace FFQuantityHelper;
 
 class CHudBuildableManCannon
-    : public CHudElement, public FFQuantityPanel
+    : public CHudElement, public vgui::FFQuantityPanel
 {
+public:
+    void UpdateFromPlayer(const C_FFPlayer* pPlayer);
+
 private:
-    DECLARE_CLASS_SIMPLE(CHudBuildableManCannon, FFQuantityPanel);
+    DECLARE_CLASS_SIMPLE(CHudBuildableManCannon, vgui::FFQuantityPanel);
     CHudBuildableManCannon(const char* pElementName);
     ~CHudBuildableManCannon();
 
-    FFQuantityItem* m_qiHealth;
-    FFQuantityItem* m_qiBuildProgress;
+    vgui::FFQuantityItem* m_qiHealth;
+    vgui::FFQuantityItem* m_qiBuildProgress;
 
     float m_flBuildStartTime = 0.0f;
     float m_flBuildDuration = 0.0f;
+
+    bool m_bCanHaveManCannon = false;
+    bool m_bHasManCannon = false;
+    int m_iHealth = -1;
 
     bool m_bDeployed = false;
     bool m_bDeploying = false;
@@ -41,7 +47,7 @@ private:
 
 	static KeyValues* s_kvVisibilityDisplayOptions;
 
-    virtual void ApplySchemeSettings(IScheme* pScheme) override;
+    virtual void ApplySchemeSettings(vgui::IScheme* pScheme) override;
 
 	virtual void AddPanelSpecificOptions(
 		KeyValues* kvPanelSpecificOptions) override;
@@ -58,13 +64,8 @@ private:
 
     void Init();
     void VidInit();
-
-    void OnTick() override;
     void Paint() override;
 
-    // Message Handlers
-    void MsgFunc_ManCannonMsg(bf_read& msg);
-    void MsgFunc_FF_BuildTimer(bf_read& msg);
 };
 
 #endif

@@ -86,8 +86,6 @@ CFFManCannon::CFFManCannon( void )
 	m_ppszSounds = g_pszFFManCannonSounds;
 
 	m_bUsePhysics = true;
-	m_flLastClientUpdate = 0;
-	m_iLastState = 0;
 #endif
 
 	// Health
@@ -210,22 +208,12 @@ void CFFManCannon::Spawn( void )
 		m_nSkin = ( pOwner->GetTeamNumber() - 1 );
 
 	m_bTakesDamage = true;//Making the jumppad take damage -GreenMushy
-	m_flLastClientUpdate = 0;
-	m_iLastState = 0;
 	m_iCombatState = JUMPPAD_IDLE;
 	m_flLastDamage = 0.0f;
 
 	//Set the current and max health to the same values -Green Mushy
 	m_iHealth = MANCANNON_HEALTH;
 	m_iMaxHealth = MANCANNON_HEALTH;
-
-	CSingleUserRecipientFilter user(pOwner);
-	user.MakeReliable();
-
-	UserMessageBegin(user, "ManCannonMsg");
-	WRITE_BYTE(BuildState_t::BUILDSTATE_BUILDING);
-	WRITE_BYTE(MANCANNON_HEALTH);
-	MessageEnd();
 }
 
 //-----------------------------------------------------------------------------
@@ -255,32 +243,6 @@ void CFFManCannon::GoLive( void )
 		SetContextThink( &CFFManCannon::OnJumpPadThink, gpGlobals->curtime, "JumpPadThink" );
 	}
 	// caes
-
-	CSingleUserRecipientFilter user(pOwner);
-	user.MakeReliable();
-
-	UserMessageBegin(user, "ManCannonMsg");
-	WRITE_BYTE(BuildState_t::BUILDSTATE_BUILT);
-	WRITE_BYTE(m_iHealth);
-	MessageEnd();
-}
-
-void CFFManCannon::RemoveQuietly(void)
-{
-	VPROF_BUDGET("CFFManCannon::RemoveQuietly", VPROF_BUDGETGROUP_FF_BUILDABLE);
-
-	CFFPlayer* pOwner = GetOwnerPlayer();
-
-	CSingleUserRecipientFilter user(pOwner);
-	user.MakeReliable();
-
-	UserMessageBegin(user, "ManCannonMsg");
-	WRITE_BYTE(BuildState_t::BUILDSTATE_NOTBUILT);
-	WRITE_BYTE(0);
-	MessageEnd();
-
-	CFFBuildableObject::RemoveQuietly();
-
 }
 
 //-----------------------------------------------------------------------------
@@ -403,48 +365,6 @@ CFFManCannon *CFFManCannon::Create( const Vector& vecOrigin, const QAngle& vecAn
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Update the client
-//-----------------------------------------------------------------------------
-void CFFManCannon::PhysicsSimulate()
-{
-	BaseClass::PhysicsSimulate();
-
-	// Update the client every 0.2 seconds
-	if (gpGlobals->curtime > m_flLastClientUpdate + 0.2f)
-	{
-		m_flLastClientUpdate = gpGlobals->curtime;
-
-		CFFPlayer *pPlayer = ToFFPlayer( m_hOwner.Get() );
-
-		if (!pPlayer)
-			return;
-
-		int iHealth = (int) (100.0f * GetHealth() / MANCANNON_HEALTH);
-		//int iArmor = (int) ( 100.0f * m_iSGArmor / m_iMaxSGArmor); // no more armor, just reduce max health - shok
-		//int iAmmo = (int) (100.0f * (float) m_iShells / m_iMaxShells);
-
-		// Last bit of ammo signifies whether the SG needs rockets
-		//if (m_iMaxRockets && !m_iRockets)
-		//	m_iAmmoPercent += 128;
-
-		// If things haven't changed then do nothing more
-		int iState = iHealth;
-		if (m_iLastState == iState)
-			return;
-
-		CSingleUserRecipientFilter user(pPlayer);
-		user.MakeReliable();
-
-		UserMessageBegin(user, "ManCannonMsg");
-		WRITE_BYTE(BuildState_t::BUILDSTATE_BUILT);
-		WRITE_BYTE(iHealth);
-		MessageEnd();
-
-		m_iLastState = iState;
-	}
-}
-
-//-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
 void CFFManCannon::Detonate( void )
@@ -464,21 +384,6 @@ void CFFManCannon::Detonate( void )
 	}
 
 	CFFBuildableObject::Detonate();
-}
-
-void CFFManCannon::Explode( void )
-{
-	CFFPlayer* pOwner = GetOwnerPlayer();
-
-	CSingleUserRecipientFilter user(pOwner);
-	user.MakeReliable();
-
-	UserMessageBegin(user, "ManCannonMsg");
-	WRITE_BYTE(BuildState_t::BUILDSTATE_NOTBUILT);
-	WRITE_BYTE(0);
-	MessageEnd();
-
-	CFFBuildableObject::Explode();
 }
 
 //-----------------------------------------------------------------------------

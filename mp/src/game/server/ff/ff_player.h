@@ -406,6 +406,15 @@ protected:
 	CNetworkVar( float, m_flBuildTimerEnd );
 	void SetBuildTimerStatus(int iBuildType, float flDuration);
 	void UpdateBuildTimerStatus();
+	
+	// Mancannon
+	CNetworkVar( bool, m_bCanHaveManCannon );
+	CNetworkVar( bool, m_bHasManCannon );
+	CNetworkVar( int, m_iManCannonBuildState );
+	CNetworkVar( int, m_iManCannonHealth );
+	CNetworkVar( float, m_flManCannonBuildStart );
+	CNetworkVar( float, m_flManCannonBuildEnd );
+	void UpdateManCannonStatus();
 
 	// Medpacks
 	CNetworkVar( int, m_iMedpackCount );

@@ -5,6 +5,7 @@
 //=============================================================================//
 
 #include "cbase.h"
+#include "ff_hud_buildable_mancannon.h"
 #include "ff_hud_resource_medpacks.h"
 #include "ff_hud_timer_build.h"
 #include "input.h"
@@ -674,7 +675,15 @@ BEGIN_RECV_TABLE_NOBASE(C_FFPlayer, DT_FFLocalPlayerExclusive)
 	RecvPropInt(RECVINFO(m_iBuildTimerType)),
 	RecvPropFloat(RECVINFO(m_flBuildTimerStart)),
 	RecvPropFloat(RECVINFO(m_flBuildTimerEnd)),
-	
+
+	// ManCannon
+	RecvPropBool(RECVINFO(m_bCanHaveManCannon)),
+	RecvPropBool(RECVINFO(m_bHasManCannon)),
+	RecvPropInt(RECVINFO(m_iManCannonBuildState)),
+	RecvPropInt(RECVINFO(m_iManCannonHealth)),
+	RecvPropFloat(RECVINFO(m_flManCannonBuildStart)),
+	RecvPropFloat(RECVINFO(m_flManCannonBuildEnd)),
+
 	// Medpacks
 	RecvPropInt(RECVINFO(m_iMedpackCount)),
 	RecvPropInt(RECVINFO(m_iMedpackMax)),
@@ -1171,6 +1180,13 @@ C_FFPlayer::C_FFPlayer() :
 	m_iMedpackCount = 0;
 	m_iMedpackMax = 0;
 	
+	// ManCannon
+	m_bCanHaveManCannon = false;
+	m_bHasManCannon = false;
+	m_iManCannonBuildState = BUILDSTATE_NOTBUILT;
+	m_iManCannonHealth = 0;
+	m_flManCannonBuildStart = 0;
+	m_flManCannonBuildEnd = 0;
 	m_PlayerAnimState = CreatePlayerAnimState(this, this, LEGANIM_9WAY, true);
 
 	// Default
@@ -2405,6 +2421,12 @@ void C_FFPlayer::OnDataChanged(DataUpdateType_t type)
 		if (pBuildTimer)
 			pBuildTimer->UpdateFromPlayer(this);
 
+		// ManCannon
+		CHudBuildableManCannon *pHud = GET_HUDELEMENT(CHudBuildableManCannon);
+		if (pHud)
+			pHud->UpdateFromPlayer(this);
+
+		// Medpacks
 		CHudResourceMedpacks *pMedpacks = GET_HUDELEMENT(CHudResourceMedpacks);
 		if (pMedpacks)
 			pMedpacks->UpdateFromPlayer(this);

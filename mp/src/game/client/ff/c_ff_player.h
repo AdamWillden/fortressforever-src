@@ -215,6 +215,14 @@ protected:
 	CNetworkVar( float, m_flBuildTimerStart );
 	CNetworkVar( float, m_flBuildTimerEnd );
 
+	// ManCannon
+	CNetworkVar( bool, m_bCanHaveManCannon );
+	CNetworkVar( bool, m_bHasManCannon );
+	CNetworkVar( int, m_iManCannonBuildState );
+	CNetworkVar( int, m_iManCannonHealth );
+	CNetworkVar( float, m_flManCannonBuildStart );
+	CNetworkVar( float, m_flManCannonBuildEnd );
+
 	// Medpacks
 	CNetworkVar( int, m_iMedpackCount );
 	CNetworkVar( int, m_iMedpackMax );
@@ -238,11 +246,19 @@ public:
 	C_FFSentryGun* GetSentryGun(void) const;
 	C_FFManCannon* GetManCannon(void) const;
 	C_FFBuildableObject* GetBuildable(int iBuildable) const;
-	
+
 	// BuildTimer
 	int GetBuildTimerType() const { return m_iBuildTimerType; }
 	float GetBuildTimerStart() const { return m_flBuildTimerStart; }
 	float GetBuildTimerEnd() const { return m_flBuildTimerEnd; }
+
+	// ManCannon
+	bool CanHaveManCannon() const { return m_bCanHaveManCannon; }
+	bool HasManCannon() const { return m_bHasManCannon; }
+	int GetManCannonBuildState() const { return m_iManCannonBuildState; }
+	int GetManCannonHealth() const { return m_iManCannonHealth; }
+	float GetManCannonBuildStart() const { return m_flManCannonBuildStart; }
+	float GetManCannonBuildEnd() const { return m_flManCannonBuildEnd; }
 
 	// Medpacks
 	int GetMedpackCount() const { return m_iMedpackCount; }

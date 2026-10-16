@@ -430,6 +430,14 @@ BEGIN_SEND_TABLE_NOBASE( CFFPlayer, DT_FFLocalPlayerExclusive )
 	SendPropFloat(SENDINFO(m_flBuildTimerStart), 0, SPROP_NOSCALE),
 	SendPropFloat(SENDINFO(m_flBuildTimerEnd), 0, SPROP_NOSCALE),
 
+	// ManCannon
+	SendPropBool(SENDINFO(m_bCanHaveManCannon)),
+	SendPropBool(SENDINFO(m_bHasManCannon)),
+	SendPropInt(SENDINFO(m_iManCannonBuildState), 2, SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iManCannonHealth), 7, SPROP_UNSIGNED),
+	SendPropFloat(SENDINFO(m_flManCannonBuildStart), 0, SPROP_NOSCALE),
+	SendPropFloat(SENDINFO(m_flManCannonBuildEnd), 0, SPROP_NOSCALE),
+
 	// Medpacks
 	SendPropInt(SENDINFO(m_iMedpackCount), 16, SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iMedpackMax), 16, SPROP_UNSIGNED),
@@ -614,6 +622,13 @@ CFFPlayer::CFFPlayer()
 	m_flBuildTimerStart = 0;
 	m_flBuildTimerEnd = 0;
 
+	// ManCannon
+	m_bCanHaveManCannon = false;
+	m_bHasManCannon = false;
+	m_iManCannonBuildState = BUILDSTATE_NOTBUILT;
+	m_iManCannonHealth = 0;
+	m_flManCannonBuildStart = 0;
+	m_flManCannonBuildEnd = 0;
 	// Medpacks
 	m_iMedpackCount = 0;
 	m_iMedpackMax = 0;
@@ -938,6 +953,46 @@ void CFFPlayer::UpdateBuildTimerStatus()
 	}
 }
 
+void CFFPlayer::UpdateManCannonStatus()
+{
+	// Derive one snapshot from authoritative state. This also covers direct
+	// ammo writes and Lua removal without maintaining a second ammo inventory.
+	m_bHasManCannon = GetAmmoCount(AMMO_MANCANNON) > 0;
+	// Class data is not available until a class has been selected.
+	m_bCanHaveManCannon = GetClassSlot() != CLASS_NONE && GetMaxManCannon() > 0;
+
+	CFFManCannon *pManCannon = GetManCannon();
+	// Removal is deferred; an old handle may still resolve this frame.
+	bool bExists = pManCannon && !pManCannon->IsMarkedForDeletion()
+		&& pManCannon->GetOwnerPlayer() == this;
+	if (!bExists)
+	{
+		m_iManCannonBuildState = BUILDSTATE_NOTBUILT;
+		m_iManCannonHealth = 0;
+	}
+	else
+	{
+		if (pManCannon->IsBuilt())
+		{
+			m_iManCannonBuildState = BUILDSTATE_BUILT;
+		}
+		else
+		{
+			m_iManCannonBuildState = BUILDSTATE_BUILDING;
+		}
+
+		m_iManCannonHealth = clamp(pManCannon->GetHealthPercent(), 0, 100);
+	}
+
+	if (m_iManCannonBuildState == BUILDSTATE_BUILDING)
+		m_flManCannonBuildEnd = m_flBuildTime;
+	else
+	{
+		m_flManCannonBuildStart = 0;
+		m_flManCannonBuildEnd = 0;
+	}
+}
+
 void CFFPlayer::UpdateMedpackStatus()
 {
 	if (GetClassSlot() == CLASS_MEDIC)
@@ -957,6 +1012,7 @@ void CFFPlayer::PostThink()
 {
 	BaseClass::PostThink();
 	UpdateBuildTimerStatus();
+	UpdateManCannonStatus();
 	UpdateMedpackStatus();
 
 	if( GetTeamNumber() < FF_TEAM_BLUE )
@@ -3920,6 +3976,7 @@ void CFFPlayer::PreBuildGenericThink( void )
 					pManCannon->SetGroundAngles( hBuildInfo.GetBuildAngles() );
 
 					m_hManCannon = pManCannon;
+					m_flManCannonBuildStart = gpGlobals->curtime;
 					m_flBuildTime = gpGlobals->curtime + 3.5f; // 3.5 seconds to build?
 				}
 				break;
