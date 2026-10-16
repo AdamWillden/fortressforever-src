@@ -13,6 +13,7 @@
 #include "ff_playeranimstate.h"
 #include "c_baseplayer.h"
 #include "ff_shareddefs.h"
+#include "ff_mancannon_status.h"
 #include "ff_medpack_status.h"
 #include "ff_buildtimer_status.h"
 #include "baseparticleentity.h"
@@ -215,6 +216,9 @@ protected:
 	// BuildTimer
 	FFBuildTimerStatus m_buildTimerStatus;
 
+	// ManCannon
+	FFManCannonStatus m_manCannonStatus;
+
 	// Medpacks
 	FFMedpackStatus m_medpackStatus;
 
@@ -237,9 +241,12 @@ public:
 	C_FFSentryGun* GetSentryGun(void) const;
 	C_FFManCannon* GetManCannon(void) const;
 	C_FFBuildableObject* GetBuildable(int iBuildable) const;
-	
+
 	// BuildTimer
 	const FFBuildTimerStatus& GetBuildTimerStatus() const { return m_buildTimerStatus; }
+
+	// ManCannon
+	const FFManCannonStatus& GetManCannonStatus() const { return m_manCannonStatus; }
 
 	// Medpacks
 	const FFMedpackStatus& GetMedpackStatus() const { return m_medpackStatus; }

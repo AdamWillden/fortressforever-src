@@ -15,6 +15,7 @@
 
 #include "ff_playeranimstate.h"
 #include "ff_shareddefs.h"
+#include "ff_mancannon_status.h"
 #include "ff_medpack_status.h"
 #include "ff_buildtimer_status.h"
 #include "ff_playerclass_parse.h"
@@ -405,6 +406,10 @@ protected:
     // BuildTimer
 	CNetworkVarEmbedded(FFBuildTimerStatus, m_buildTimerStatus);
 	void UpdateBuildTimerStatus();
+
+	// Mancannon
+	CNetworkVarEmbedded(FFManCannonStatus, m_manCannonStatus);
+	void UpdateManCannonStatus();
 
 	// Medpacks
 	CNetworkVarEmbedded(FFMedpackStatus, m_medpackStatus);
