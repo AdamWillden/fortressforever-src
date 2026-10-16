@@ -15,6 +15,7 @@
 
 #include "ff_playeranimstate.h"
 #include "ff_shareddefs.h"
+#include "ff_medpack_status.h"
 #include "ff_buildtimer_status.h"
 #include "ff_playerclass_parse.h"
 #include "ff_esp_shared.h"
@@ -275,16 +276,7 @@ public:
 
 	void	SetLastSpawn( CBaseEntity *pEntity );
 
-private:
-	// ----------------------
-	// Messages
-	// ----------------------
-	void SendMedpacksMsg();
-
 public:
-	using BaseClass::GiveAmmo;
-	int GiveAmmo(int iCount, int iAmmoIndex, bool bSuppressSound = false) override;
-
 	// Networked the random player class var -> Defrag
 	CNetworkVar( bool, m_fRandomPC );
 	int m_iNextClass;
@@ -413,6 +405,10 @@ protected:
     // BuildTimer
 	CNetworkVarEmbedded(FFBuildTimerStatus, m_buildTimerStatus);
 	void UpdateBuildTimerStatus();
+
+	// Medpacks
+	CNetworkVarEmbedded(FFMedpackStatus, m_medpackStatus);
+	void UpdateMedpackStatus();
 
 	// Used for seeing if a player is currently
 	// trying to build a detpack, dispenser, or sentry gun

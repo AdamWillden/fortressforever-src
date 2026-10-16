@@ -13,6 +13,7 @@
 #include "ff_playeranimstate.h"
 #include "c_baseplayer.h"
 #include "ff_shareddefs.h"
+#include "ff_medpack_status.h"
 #include "ff_buildtimer_status.h"
 #include "baseparticleentity.h"
 #include "ff_esp_shared.h"
@@ -214,6 +215,9 @@ protected:
 	// BuildTimer
 	FFBuildTimerStatus m_buildTimerStatus;
 
+	// Medpacks
+	FFMedpackStatus m_medpackStatus;
+
 	// Used for seeing if a player is currently
 	// trying to build a detpack, dispenser, or sentry gun
 	CNetworkVar(bool, m_bStaticBuilding);
@@ -236,6 +240,9 @@ public:
 	
 	// BuildTimer
 	const FFBuildTimerStatus& GetBuildTimerStatus() const { return m_buildTimerStatus; }
+
+	// Medpacks
+	const FFMedpackStatus& GetMedpackStatus() const { return m_medpackStatus; }
 
 	// Gets the entity at player's current objective (set by Lua)
 	CBaseEntity* GetCurrObjectiveEntity(void) { return dynamic_cast<CBaseEntity*>(m_hObjectiveEntity.Get()); }

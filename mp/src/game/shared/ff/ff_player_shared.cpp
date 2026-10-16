@@ -778,7 +778,6 @@ void CFFPlayer::ClassSpecificSkill()
 				EmitSound("Item.Toss");
 
 				RemoveAmmo(FF_MEDPACK_COST, AMMO_CELLS);
-				SendMedpacksMsg();
 				m_fLastMedicCellRegenTick = gpGlobals->curtime;
 			}
 		}

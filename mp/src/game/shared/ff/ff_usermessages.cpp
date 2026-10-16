@@ -83,7 +83,6 @@ void RegisterUserMessages()
 	usermessages->Register("DispenserMsg", -1);
 	usermessages->Register("SentryMsg", -1);
 	usermessages->Register("ManCannonMsg", -1);
-	usermessages->Register("MedpacksMsg", -1);
 	usermessages->Register("DetpackMsg", -1);
 	usermessages->Register("PipeMsg", -1);
 
