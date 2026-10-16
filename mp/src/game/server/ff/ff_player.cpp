@@ -430,6 +430,10 @@ BEGIN_SEND_TABLE_NOBASE( CFFPlayer, DT_FFLocalPlayerExclusive )
 	SendPropFloat(SENDINFO(m_flBuildTimerStart), 0, SPROP_NOSCALE),
 	SendPropFloat(SENDINFO(m_flBuildTimerEnd), 0, SPROP_NOSCALE),
 
+	// Medpacks
+	SendPropInt(SENDINFO(m_iMedpackCount), 16, SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iMedpackMax), 16, SPROP_UNSIGNED),
+
 #ifdef EXTRA_LOCAL_ORIGIN_ACCURACY
 	SendPropVector(SENDINFO(m_vecOrigin), 32,  SPROP_CHANGES_OFTEN, 0.0f, HIGH_DEFAULT),
 #endif
@@ -609,6 +613,10 @@ CFFPlayer::CFFPlayer()
 	m_iBuildTimerType = FF_BUILD_NONE;
 	m_flBuildTimerStart = 0;
 	m_flBuildTimerEnd = 0;
+
+	// Medpacks
+	m_iMedpackCount = 0;
+	m_iMedpackMax = 0;
 
 	m_bRadioTagged = false;
 	m_bRadioTaggedFromLUA = false;
@@ -930,10 +938,26 @@ void CFFPlayer::UpdateBuildTimerStatus()
 	}
 }
 
+void CFFPlayer::UpdateMedpackStatus()
+{
+	if (GetClassSlot() == CLASS_MEDIC)
+	{
+		// Throwing a medpack consumes ten cells (ClassSpecialSkill).
+		m_iMedpackCount = GetAmmoCount(AMMO_CELLS) / 10;
+		m_iMedpackMax = GetMaxCells() / 10;
+	}
+	else
+	{
+		m_iMedpackCount = 0;
+		m_iMedpackMax = 0;
+	}
+}
+
 void CFFPlayer::PostThink()
 {
 	BaseClass::PostThink();
 	UpdateBuildTimerStatus();
+	UpdateMedpackStatus();
 
 	if( GetTeamNumber() < FF_TEAM_BLUE )
 	{
@@ -7260,37 +7284,6 @@ bool CFFPlayer::SetAmmoInClip( const char *_name, int iAmount )
 		}
 	}
 	return false;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Give ammo and update the medic's medpack display.
-//-----------------------------------------------------------------------------
-int CFFPlayer::GiveAmmo(int iCount, int iAmmoIndex, bool bSuppressSound)
-{
-	const int iAdded = BaseClass::GiveAmmo(iCount, iAmmoIndex, bSuppressSound);
-
-	if (iAdded > 0
-		&& GetClassSlot() == CLASS_MEDIC
-		&& iAmmoIndex == GetAmmoDef()->Index(AMMO_CELLS))
-	{
-		SendMedpacksMsg();
-	}
-
-	return iAdded;
-}
-
-void CFFPlayer::SendMedpacksMsg()
-{
-	const int iMaxMedpacks = GetMaxCells() / FF_MEDPACK_COST;
-	const int iNumMedpacks = GetAmmoCount(AMMO_CELLS) / FF_MEDPACK_COST;
-
-	CSingleUserRecipientFilter user(this);
-	user.MakeReliable();
-
-	UserMessageBegin(user, "MedpacksMsg");
-		WRITE_BYTE(iMaxMedpacks);
-		WRITE_BYTE(iNumMedpacks);
-	MessageEnd();
 }
 
 // Find a map guide

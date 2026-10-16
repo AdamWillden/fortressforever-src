@@ -1,9 +1,11 @@
 #include "cbase.h"
 
 #include "ff_hud_resource_medpacks.h"
+#include "c_ff_player.h"
+
+using namespace vgui;
 
 DECLARE_HUDELEMENT(CHudResourceMedpacks);
-DECLARE_HUD_MESSAGE(CHudResourceMedpacks, MedpacksMsg);
 
 CHudResourceMedpacks::CHudResourceMedpacks(
 	const char* pElementName)
@@ -14,7 +16,7 @@ CHudResourceMedpacks::CHudResourceMedpacks(
 {
 	SetParent(g_pClientMode->GetViewport());
 
-	SetHiddenBits(HIDEHUD_PLAYERDEAD | HIDEHUD_NOTMEDIC);
+	SetHiddenBits(HIDEHUD_ALWAYS);
 
 	SetHeaderText(L"Medpacks");
 	SetHeaderIconChar('c');
@@ -122,14 +124,7 @@ void CHudResourceMedpacks::ApplyStyleData(
 			kvDefaultPanelSpecificValues);
 
 	if (iShowPanel != -1)
-	{
 		m_bShowPanel = (iShowPanel == 1);
-
-		if (m_bShowPanel)
-			SetHiddenBits(HIDEHUD_PLAYERDEAD | HIDEHUD_NOTMEDIC);
-		else
-			SetHiddenBits(HIDEHUD_ALWAYS);
-	}
 
 	if (iHideText != -1)
 	{
@@ -143,23 +138,29 @@ void CHudResourceMedpacks::ApplyStyleData(
 		m_qiMedpacks->SetAmountDisplay(
 			valueDisplay.value());
 
+	ApplyDisplayOptions();
+}
+
+void CHudResourceMedpacks::ApplyDisplayOptions()
+{
 	if (m_bShowPanel)
 	{
 		if (IsInPreviewMode())
-		{
 			SetHiddenBits(0);
-		}
+		else if (m_iMedpackMax > 0)
+			SetHiddenBits(HIDEHUD_PLAYERDEAD);
 		else
-		{
-			SetHiddenBits(HIDEHUD_PLAYERDEAD | HIDEHUD_NOTMEDIC);
-		}
+			SetHiddenBits(HIDEHUD_ALWAYS);
+	}
+	else
+	{
+		SetHiddenBits(HIDEHUD_ALWAYS);
 	}
 }
 
 void CHudResourceMedpacks::Init()
 {
 	ivgui()->AddTickSignal(GetVPanel(), 250);
-	HOOK_HUD_MESSAGE(CHudResourceMedpacks, MedpacksMsg);
 
 	m_qiMedpacks = AddItem("HudResourceMedpacks");
 	m_qiMedpacks->SetLabel("#FF_ITEM_MEDPACKS");
@@ -176,21 +177,37 @@ void CHudResourceMedpacks::Init()
 
 void CHudResourceMedpacks::VidInit()
 {
+	m_iMedpackCount = -1;
+	m_iMedpackMax = -1;
 	m_qiMedpacks->SetAmount(0);
 	SetText(m_wsRegenerating);
+	ApplyDisplayOptions();
+	UpdateFromPlayer(C_FFPlayer::GetLocalFFPlayer());
 }
 
-void CHudResourceMedpacks::MsgFunc_MedpacksMsg(
-	bf_read& msg)
+void CHudResourceMedpacks::UpdateFromPlayer(const C_FFPlayer* pPlayer)
 {
-	int iMaxMedpacks = static_cast<int>(msg.ReadByte());
-	int iNumMedpacks = static_cast<int>(msg.ReadByte());
+	if (!pPlayer || !m_qiMedpacks)
+		return;
 
-	m_qiMedpacks->SetAmount(iNumMedpacks);
-	m_qiMedpacks->SetAmountMax(iMaxMedpacks);
+	const int iMedpackCount = pPlayer->GetMedpackCount();
+	const int iMedpackMax = pPlayer->GetMedpackMax();
+	const bool bStateUnchanged =
+		m_iMedpackCount == iMedpackCount
+		&& m_iMedpackMax == iMedpackMax;
 
-	if (iMaxMedpacks == iNumMedpacks)
+	if (bStateUnchanged)
+		return;
+
+	m_iMedpackCount = iMedpackCount;
+	m_iMedpackMax = iMedpackMax;
+	m_qiMedpacks->SetAmountMax(MAX(1, m_iMedpackMax));
+	m_qiMedpacks->SetAmount(m_iMedpackCount);
+
+	if (m_iMedpackMax > 0 && m_iMedpackCount >= m_iMedpackMax)
 		SetText(m_wsFull);
 	else
 		SetText(m_wsRegenerating);
+
+	ApplyDisplayOptions();
 }

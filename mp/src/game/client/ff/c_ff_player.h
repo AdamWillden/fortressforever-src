@@ -215,6 +215,10 @@ protected:
 	CNetworkVar( float, m_flBuildTimerStart );
 	CNetworkVar( float, m_flBuildTimerEnd );
 
+	// Medpacks
+	CNetworkVar( int, m_iMedpackCount );
+	CNetworkVar( int, m_iMedpackMax );
+
 	// Used for seeing if a player is currently
 	// trying to build a detpack, dispenser, or sentry gun
 	CNetworkVar(bool, m_bStaticBuilding);
@@ -239,6 +243,10 @@ public:
 	int GetBuildTimerType() const { return m_iBuildTimerType; }
 	float GetBuildTimerStart() const { return m_flBuildTimerStart; }
 	float GetBuildTimerEnd() const { return m_flBuildTimerEnd; }
+
+	// Medpacks
+	int GetMedpackCount() const { return m_iMedpackCount; }
+	int GetMedpackMax() const { return m_iMedpackMax; }
 
 	// Gets the entity at player's current objective (set by Lua)
 	CBaseEntity* GetCurrObjectiveEntity(void) { return dynamic_cast<CBaseEntity*>(m_hObjectiveEntity.Get()); }

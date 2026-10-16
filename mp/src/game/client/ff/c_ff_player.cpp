@@ -5,6 +5,7 @@
 //=============================================================================//
 
 #include "cbase.h"
+#include "ff_hud_resource_medpacks.h"
 #include "ff_hud_timer_build.h"
 #include "input.h"
 #include "c_ff_player.h"
@@ -673,6 +674,10 @@ BEGIN_RECV_TABLE_NOBASE(C_FFPlayer, DT_FFLocalPlayerExclusive)
 	RecvPropInt(RECVINFO(m_iBuildTimerType)),
 	RecvPropFloat(RECVINFO(m_flBuildTimerStart)),
 	RecvPropFloat(RECVINFO(m_flBuildTimerEnd)),
+	
+	// Medpacks
+	RecvPropInt(RECVINFO(m_iMedpackCount)),
+	RecvPropInt(RECVINFO(m_iMedpackMax)),
 
 #ifdef EXTRA_LOCAL_ORIGIN_ACCURACY
 RecvPropVector(RECVINFO_NAME(m_vecNetworkOrigin, m_vecOrigin)),
@@ -1162,6 +1167,10 @@ C_FFPlayer::C_FFPlayer() :
 	m_flBuildTimerStart = 0;
 	m_flBuildTimerEnd = 0;
 
+	// Medpacks
+	m_iMedpackCount = 0;
+	m_iMedpackMax = 0;
+	
 	m_PlayerAnimState = CreatePlayerAnimState(this, this, LEGANIM_9WAY, true);
 
 	// Default
@@ -2395,6 +2404,10 @@ void C_FFPlayer::OnDataChanged(DataUpdateType_t type)
 		CHudTimerBuild *pBuildTimer = GET_HUDELEMENT(CHudTimerBuild);
 		if (pBuildTimer)
 			pBuildTimer->UpdateFromPlayer(this);
+
+		CHudResourceMedpacks *pMedpacks = GET_HUDELEMENT(CHudResourceMedpacks);
+		if (pMedpacks)
+			pMedpacks->UpdateFromPlayer(this);
 	}
 
 	if (type == DATA_UPDATE_CREATED)
