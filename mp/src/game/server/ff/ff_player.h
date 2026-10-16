@@ -409,6 +409,13 @@ protected:
 	CNetworkHandle( CFFDetpack, m_hDetpack );
 	CNetworkHandle( CFFManCannon, m_hManCannon );
 
+    // BuildTimer
+	CNetworkVar( int, m_iBuildTimerType );
+	CNetworkVar( float, m_flBuildTimerStart );
+	CNetworkVar( float, m_flBuildTimerEnd );
+	void SetBuildTimerStatus(int iBuildType, float flDuration);
+	void UpdateBuildTimerStatus();
+
 	// Used for seeing if a player is currently
 	// trying to build a detpack, dispenser, or sentry gun
 	CNetworkVar( bool, m_bStaticBuilding );

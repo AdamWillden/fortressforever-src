@@ -5,6 +5,7 @@
 //=============================================================================//
 
 #include "cbase.h"
+#include "ff_hud_timer_build.h"
 #include "input.h"
 #include "c_ff_player.h"
 #include "ff_weapon_base.h"
@@ -668,6 +669,10 @@ END_RECV_TABLE()
 #define max(a,b)  (((a) > (b)) ? (a) : (b))
 
 BEGIN_RECV_TABLE_NOBASE(C_FFPlayer, DT_FFLocalPlayerExclusive)
+	// BuildTimer
+	RecvPropInt(RECVINFO(m_iBuildTimerType)),
+	RecvPropFloat(RECVINFO(m_flBuildTimerStart)),
+	RecvPropFloat(RECVINFO(m_flBuildTimerEnd)),
 
 #ifdef EXTRA_LOCAL_ORIGIN_ACCURACY
 RecvPropVector(RECVINFO_NAME(m_vecNetworkOrigin, m_vecOrigin)),
@@ -1152,6 +1157,11 @@ const unsigned char* GetEncryptionKey(void)
 C_FFPlayer::C_FFPlayer() :
 	m_iv_angEyeAngles("C_FFPlayer::m_iv_angEyeAngles")
 {
+	// BuildTimer
+	m_iBuildTimerType = FF_BUILD_NONE;
+	m_flBuildTimerStart = 0;
+	m_flBuildTimerEnd = 0;
+
 	m_PlayerAnimState = CreatePlayerAnimState(this, this, LEGANIM_9WAY, true);
 
 	// Default
@@ -2378,6 +2388,14 @@ void C_FFPlayer::OnPreDataChanged(DataUpdateType_t updateType)
 void C_FFPlayer::OnDataChanged(DataUpdateType_t type)
 {
 	BaseClass::OnDataChanged(type);
+
+	if (IsLocalPlayer())
+	{
+		// BuildTimer
+		CHudTimerBuild *pBuildTimer = GET_HUDELEMENT(CHudTimerBuild);
+		if (pBuildTimer)
+			pBuildTimer->UpdateFromPlayer(this);
+	}
 
 	if (type == DATA_UPDATE_CREATED)
 	{

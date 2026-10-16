@@ -210,6 +210,11 @@ protected:
 	CNetworkHandle(C_FFDetpack, m_hDetpack);
 	CNetworkHandle(C_FFManCannon, m_hManCannon);
 
+	// BuildTimer
+	CNetworkVar( int, m_iBuildTimerType );
+	CNetworkVar( float, m_flBuildTimerStart );
+	CNetworkVar( float, m_flBuildTimerEnd );
+
 	// Used for seeing if a player is currently
 	// trying to build a detpack, dispenser, or sentry gun
 	CNetworkVar(bool, m_bStaticBuilding);
@@ -229,7 +234,11 @@ public:
 	C_FFSentryGun* GetSentryGun(void) const;
 	C_FFManCannon* GetManCannon(void) const;
 	C_FFBuildableObject* GetBuildable(int iBuildable) const;
-	// End: Added by Mulchman for building objects and such
+	
+	// BuildTimer
+	int GetBuildTimerType() const { return m_iBuildTimerType; }
+	float GetBuildTimerStart() const { return m_flBuildTimerStart; }
+	float GetBuildTimerEnd() const { return m_flBuildTimerEnd; }
 
 	// Gets the entity at player's current objective (set by Lua)
 	CBaseEntity* GetCurrObjectiveEntity(void) { return dynamic_cast<CBaseEntity*>(m_hObjectiveEntity.Get()); }
