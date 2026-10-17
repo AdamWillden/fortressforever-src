@@ -57,3 +57,41 @@ The message baseline intentionally retains historical behavior, including its
 mancannon OnTick early return; this is not proof of equivalent coverage or behavior.
 An incomplete implementation can appear cheaper because it misses updates.
 No build or runtime measurements were performed when creating this branch.
+
+## Listen-server network counters
+
+The existing bindings also collect engine-channel traffic. No additional command
+or external capture tool is needed. Rebuild the client for these new counters.
+Start/reset AFTER connecting and after initial loading has settled:
+
+    bind 8 "sv_ff_hud_measure 1;cl_ff_hud_measure 1;sv_ff_hud_measure_reset;cl_ff_hud_measure_reset;server_game_time"
+    bind 9 "sv_ff_hud_measure 0;cl_ff_hud_measure 0;server_game_time;sv_ff_hud_measure_report;cl_ff_hud_measure_report"
+
+The client report now adds incoming/outgoing channel bytes, incoming LOCALPLAYER,
+USERMESSAGES and TOTAL packet-category bytes, and bytes per capture second. Duration
+and counters freeze on disabling measurement. Each run must enable, reset, capture,
+then disable/report; do not toggle measurement off/on within a run. Reset clears
+all network baselines. Avoid reconnecting, changing maps or pausing within a run.
+
+Interpretation:
+- LOCALPLAYER includes all local-player entity updates, not just HUD properties.
+- USERMESSAGES includes all user messages, not just the three HUD messages.
+- Channel totals and packet-category totals are different engine accounting views;
+  they need not sum or match. These are not physical Ethernet/UDP byte counts.
+- The client samples packet history once per frame and once when stopped. Each
+  valid incoming sequence is counted once. Overwritten history is reported as
+  missed history, making category totals incomplete. Lost/choked entries are
+  skipped; channel-byte totals are taken from cumulative engine counters.
+- A missing/reset channel marks capture invalid. Zero incoming counters or zero
+  selected categories are explicitly flagged rather than interpreted as free
+  replication. Loopback support must be verified from your first actual report.
+- Initial connection baselines and signon traffic are excluded by resetting after
+  joining. Test joins separately if relevant.
+
+Run a stationary idle capture and the same actions/duration on BOTH branches.
+Keep FPS cap, tick rate, network rates, map, HUD settings and player count equal.
+Compare idle and action runs separately; category differences are indicative, not
+exact per-HUD attribution. Run several repeats. Copy the whole client report,
+including validity/loopback/missed-history flags, alongside the CPU results.
+Network sampling adds client overhead outside the timed HUD scopes. Disable it
+for whole-frame performance profiling. No build/runtime verification was done.

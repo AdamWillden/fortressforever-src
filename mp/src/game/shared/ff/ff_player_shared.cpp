@@ -2668,8 +2668,141 @@ void CFFPlayer::ThrowPrimedGrenade( void )
 #define FF_HUD_MEASURE_RESET "sv_ff_hud_measure_reset"
 #endif
 
+#ifdef CLIENT_DLL
+#include "inetchannelinfo.h"
+#include "igamesystem.h"
+
+class FFHudNetworkCapture : public CAutoGameSystemPerFrame
+{
+public:
+    FFHudNetworkCapture() : CAutoGameSystemPerFrame("FFHudNetworkCapture") { Clear(); }
+
+    void Clear()
+    {
+        m_channel = NULL;
+        m_valid = false;
+        m_loopback = false;
+        m_lastSequence = 0;
+        m_startIncoming = m_startOutgoing = 0;
+        m_incoming = m_outgoing = 0;
+        m_packets = m_missedHistory = 0;
+        m_localPlayer = m_userMessages = m_packetBytes = 0;
+    }
+
+    void Reset()
+    {
+        Clear();
+        m_channel = engine->GetNetChannelInfo();
+        if (!m_channel)
+            return;
+        m_valid = true;
+        m_loopback = m_channel->IsLoopback();
+        m_lastSequence = m_channel->GetSequenceNr(FLOW_INCOMING);
+        m_startIncoming = m_channel->GetTotalData(FLOW_INCOMING);
+        m_startOutgoing = m_channel->GetTotalData(FLOW_OUTGOING);
+    }
+
+    void Sample()
+    {
+        if (!m_valid)
+            return;
+        INetChannelInfo* channel = engine->GetNetChannelInfo();
+        if (channel != m_channel)
+        {
+            m_valid = false;
+            return;
+        }
+        const int sequence = channel->GetSequenceNr(FLOW_INCOMING);
+        const int incoming = channel->GetTotalData(FLOW_INCOMING);
+        const int outgoing = channel->GetTotalData(FLOW_OUTGOING);
+        if (sequence < m_lastSequence || incoming < m_startIncoming || outgoing < m_startOutgoing)
+        {
+            m_valid = false;
+            return;
+        }
+        m_incoming = incoming - m_startIncoming;
+        m_outgoing = outgoing - m_startOutgoing;
+
+        int first = m_lastSequence + 1;
+        const int oldest = sequence - channel->GetBufferSize() + 1;
+        if (first < oldest)
+        {
+            m_missedHistory += oldest - first;
+            first = oldest;
+        }
+        for (int packet = first; packet <= sequence; ++packet)
+        {
+            if (!channel->IsValidPacket(FLOW_INCOMING, packet))
+                continue;
+            m_packets += 1;
+            m_localPlayer += channel->GetPacketBytes(FLOW_INCOMING, packet, INetChannelInfo::LOCALPLAYER);
+            m_userMessages += channel->GetPacketBytes(FLOW_INCOMING, packet, INetChannelInfo::USERMESSAGES);
+            m_packetBytes += channel->GetPacketBytes(FLOW_INCOMING, packet, INetChannelInfo::TOTAL);
+        }
+        m_lastSequence = sequence;
+    }
+
+    void Update(float frametime) override
+    {
+        if (FFHudMeasureEnabled())
+            Sample();
+    }
+
+    void Report(double duration) const
+    {
+        Msg("Network counters: valid=%d, loopback=%d, incoming packets=%.0f, missed history=%.0f\n",
+            m_valid, m_loopback, m_packets, m_missedHistory);
+        Msg("Engine channel bytes: incoming=%.0f, outgoing=%.0f\n", m_incoming, m_outgoing);
+        Msg("Incoming packet categories: LOCALPLAYER=%.0f, USERMESSAGES=%.0f, TOTAL=%.0f bytes\n",
+            m_localPlayer, m_userMessages, m_packetBytes);
+        if (duration > 0)
+            Msg("Bytes/second: incoming=%.2f, LOCALPLAYER=%.2f, USERMESSAGES=%.2f\n",
+                m_incoming / duration, m_localPlayer / duration, m_userMessages / duration);
+        if (!m_valid)
+            Msg("Network capture unavailable or channel reset/disconnected; reset after connecting and retry.\n");
+        else if (m_packets == 0 || (m_incoming == 0 && m_packetBytes == 0))
+            Msg("No usable incoming traffic counters advanced. Zero does NOT establish zero replication cost on loopback.\n");
+        else if (m_localPlayer == 0 && m_userMessages == 0)
+            Msg("Traffic counters advanced but both selected categories are zero; category accounting is unverified.\n");
+        if (m_missedHistory > 0)
+            Msg("Packet history was overwritten: category totals are incomplete.\n");
+        Msg("These are engine-accounted bytes, not physical wire bytes or exact HUD attribution.\n");
+    }
+
+private:
+    INetChannelInfo* m_channel;
+    bool m_valid;
+    bool m_loopback;
+    int m_lastSequence;
+    int m_startIncoming;
+    int m_startOutgoing;
+    double m_incoming;
+    double m_outgoing;
+    double m_packets;
+    double m_missedHistory;
+    double m_localPlayer;
+    double m_userMessages;
+    double m_packetBytes;
+};
+static FFHudNetworkCapture ffHudNetworkCapture;
+#endif
+
+static double ffHudMeasureStopTime = 0;
+static void FFHudMeasureEnableChanged(IConVar* variable, const char* oldValue, float oldFloat)
+{
+    ConVar* enabled = static_cast<ConVar*>(variable);
+    if (!enabled->GetBool() && oldFloat != 0)
+    {
+#ifdef CLIENT_DLL
+        ffHudNetworkCapture.Sample();
+#endif
+        ffHudMeasureStopTime = Plat_FloatTime();
+    }
+}
+
+
 static ConVar ffHudMeasureEnabled(FF_HUD_MEASURE_ENABLE, "0", FCVAR_NONE,
-    "Enable temporary HUD A/B timings and counters.");
+    "Enable temporary HUD A/B timings and counters.", FFHudMeasureEnableChanged);
 struct FFHudMeasureStats
 {
     double calls;
@@ -2699,12 +2832,28 @@ static void FFHudMeasureReset(const CCommand& args)
     for (int i = 0; i < HUD_MEASURE_COUNT; ++i)
         ffHudStats[i] = FFHudMeasureStats();
     ffHudMeasureResetTime = Plat_FloatTime();
+    ffHudMeasureStopTime = 0;
+#ifdef CLIENT_DLL
+    ffHudNetworkCapture.Reset();
+#endif
     Msg("HUD measurement counters reset.\n");
 }
 static void FFHudMeasureReport(const CCommand& args)
 {
-    Msg("HUD measurements: %.2f wall seconds since reset; enabled=%d\n",
-        Plat_FloatTime() - ffHudMeasureResetTime, FFHudMeasureEnabled());
+    if (ffHudMeasureResetTime == 0)
+    {
+        Msg("Reset the HUD measurement counters before capturing.\n");
+        return;
+    }
+#ifdef CLIENT_DLL
+    if (FFHudMeasureEnabled())
+        ffHudNetworkCapture.Sample();
+#endif
+    double endTime = ffHudMeasureStopTime;
+    if (endTime == 0)
+        endTime = Plat_FloatTime();
+    const double duration = endTime - ffHudMeasureResetTime;
+    Msg("HUD measurements: %.2f capture seconds; enabled=%d\n", duration, FFHudMeasureEnabled());
     Msg("name: calls, HUD updates, total ms, mean us/call, payload bytes\n");
     for (int i = 0; i < HUD_MEASURE_COUNT; ++i)
     {
@@ -2715,7 +2864,10 @@ static void FFHudMeasureReport(const CCommand& args)
         Msg("%s: %.0f, %.0f, %.3f, %.3f, %.0f\n", ffHudMeasureNames[i],
             stats.calls, stats.changed, stats.seconds * 1000.0, mean, stats.payloadBytes);
     }
-    Msg("Payload bytes exclude protocol overhead; replicated wire bytes are not counted.\n");
+    Msg("Message payload counters exclude protocol overhead.\n");
+#ifdef CLIENT_DLL
+    ffHudNetworkCapture.Report(duration);
+#endif
 }
 static ConCommand ffHudMeasureReportCommand(FF_HUD_MEASURE_REPORT, FFHudMeasureReport,
     "Report temporary HUD measurements.", FCVAR_NONE);
