@@ -1,4 +1,5 @@
 #include "cbase.h"
+#include "ff_hud_measure.h"
 
 #include "ff_hud_timer_build.h"
 
@@ -207,6 +208,7 @@ void CHudTimerBuild::Paint()
 
 void CHudTimerBuild::UpdateFromPlayer(const C_FFPlayer* pPlayer)
 {
+	FFHudMeasureScope measure(HUD_MEASURE_BUILDTIMER);
 	if (!pPlayer || !m_qiTimer)
 		return;
 
@@ -220,6 +222,8 @@ void CHudTimerBuild::UpdateFromPlayer(const C_FFPlayer* pPlayer)
 
 	if (bStateUnchanged)
 		return;
+
+	measure.Changed();
 
 	m_iBuildType = iBuildType;
 	m_flStartTime = flStartTime;

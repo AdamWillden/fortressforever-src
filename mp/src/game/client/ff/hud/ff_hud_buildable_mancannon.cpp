@@ -1,4 +1,5 @@
 #include "cbase.h"
+#include "ff_hud_measure.h"
 
 #include "ff_hud_buildable_mancannon.h"
 
@@ -345,6 +346,7 @@ void CHudBuildableManCannon::Paint()
 
 void CHudBuildableManCannon::UpdateFromPlayer(const C_FFPlayer* pPlayer)
 {
+	FFHudMeasureScope measure(HUD_MEASURE_MANCANNON);
 	if (!pPlayer || !m_qiHealth || !m_qiBuildProgress)
 		return;
 
@@ -364,6 +366,8 @@ void CHudBuildableManCannon::UpdateFromPlayer(const C_FFPlayer* pPlayer)
 
 	if (bStateUnchanged)
 		return;
+
+	measure.Changed();
 
 	m_bCanHaveManCannon = pPlayer->CanHaveManCannon();
 	m_bHasManCannon = pPlayer->HasManCannon();

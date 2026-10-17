@@ -6,6 +6,7 @@
 //=============================================================================
 
 #include "cbase.h"
+#include "ff_hud_measure.h"
 #include "ff_player.h"
 #include "ff_gamerules.h"
 #include "ff_entity_system.h"	// Entity system
@@ -926,6 +927,7 @@ void CFFPlayer::PreThink(void)
 
 void CFFPlayer::SetBuildTimerStatus(int iBuildType, float flDuration)
 {
+	FFHudMeasureScope measure(HUD_MEASURE_TIMER_SET);
 	if (iBuildType != FF_BUILD_NONE && flDuration > 0)
 	{
 		m_iBuildTimerType = iBuildType;
@@ -942,6 +944,7 @@ void CFFPlayer::SetBuildTimerStatus(int iBuildType, float flDuration)
 
 void CFFPlayer::UpdateBuildTimerStatus()
 {
+	FFHudMeasureScope measure(HUD_MEASURE_BUILDTIMER);
 	if (m_iBuildTimerType == FF_BUILD_NONE)
 		return;
 
@@ -955,6 +958,7 @@ void CFFPlayer::UpdateBuildTimerStatus()
 
 void CFFPlayer::UpdateManCannonStatus()
 {
+	FFHudMeasureScope measure(HUD_MEASURE_MANCANNON);
 	// Derive one snapshot from authoritative state. This also covers direct
 	// ammo writes and Lua removal without maintaining a second ammo inventory.
 	m_bHasManCannon = GetAmmoCount(AMMO_MANCANNON) > 0;
@@ -995,6 +999,7 @@ void CFFPlayer::UpdateManCannonStatus()
 
 void CFFPlayer::UpdateMedpackStatus()
 {
+	FFHudMeasureScope measure(HUD_MEASURE_MEDPACKS);
 	if (GetClassSlot() == CLASS_MEDIC)
 	{
 		// Throwing a medpack consumes ten cells (ClassSpecialSkill).

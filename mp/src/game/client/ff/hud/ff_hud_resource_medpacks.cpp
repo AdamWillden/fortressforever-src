@@ -1,4 +1,5 @@
 #include "cbase.h"
+#include "ff_hud_measure.h"
 
 #include "ff_hud_resource_medpacks.h"
 #include "c_ff_player.h"
@@ -187,6 +188,7 @@ void CHudResourceMedpacks::VidInit()
 
 void CHudResourceMedpacks::UpdateFromPlayer(const C_FFPlayer* pPlayer)
 {
+	FFHudMeasureScope measure(HUD_MEASURE_MEDPACKS);
 	if (!pPlayer || !m_qiMedpacks)
 		return;
 
@@ -198,6 +200,8 @@ void CHudResourceMedpacks::UpdateFromPlayer(const C_FFPlayer* pPlayer)
 
 	if (bStateUnchanged)
 		return;
+
+	measure.Changed();
 
 	m_iMedpackCount = iMedpackCount;
 	m_iMedpackMax = iMedpackMax;
