@@ -12,6 +12,7 @@
 //		First created
 //		Added man cannon stuff
 #include "cbase.h"
+#include "ff_hud_measure.h"
 #include "ff_buildableobject.h"
 #include "ff_buildable_mancannon.h"
 #include "const.h"
@@ -222,10 +223,16 @@ void CFFManCannon::Spawn( void )
 	CSingleUserRecipientFilter user(pOwner);
 	user.MakeReliable();
 
-	UserMessageBegin(user, "ManCannonMsg");
-	WRITE_BYTE(BuildState_t::BUILDSTATE_BUILDING);
-	WRITE_BYTE(MANCANNON_HEALTH);
-	MessageEnd();
+	{
+
+		FFHudMeasureScope measure(HUD_MEASURE_SEND_MANCANNON, 2);
+
+		UserMessageBegin(user, "ManCannonMsg");
+		WRITE_BYTE(BuildState_t::BUILDSTATE_BUILDING);
+		WRITE_BYTE(MANCANNON_HEALTH);
+		MessageEnd();
+
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -259,10 +266,16 @@ void CFFManCannon::GoLive( void )
 	CSingleUserRecipientFilter user(pOwner);
 	user.MakeReliable();
 
-	UserMessageBegin(user, "ManCannonMsg");
-	WRITE_BYTE(BuildState_t::BUILDSTATE_BUILT);
-	WRITE_BYTE(m_iHealth);
-	MessageEnd();
+	{
+
+		FFHudMeasureScope measure(HUD_MEASURE_SEND_MANCANNON, 2);
+
+		UserMessageBegin(user, "ManCannonMsg");
+		WRITE_BYTE(BuildState_t::BUILDSTATE_BUILT);
+		WRITE_BYTE(m_iHealth);
+		MessageEnd();
+
+	}
 }
 
 void CFFManCannon::RemoveQuietly(void)
@@ -274,10 +287,16 @@ void CFFManCannon::RemoveQuietly(void)
 	CSingleUserRecipientFilter user(pOwner);
 	user.MakeReliable();
 
-	UserMessageBegin(user, "ManCannonMsg");
-	WRITE_BYTE(BuildState_t::BUILDSTATE_NOTBUILT);
-	WRITE_BYTE(0);
-	MessageEnd();
+	{
+
+		FFHudMeasureScope measure(HUD_MEASURE_SEND_MANCANNON, 2);
+
+		UserMessageBegin(user, "ManCannonMsg");
+		WRITE_BYTE(BuildState_t::BUILDSTATE_NOTBUILT);
+		WRITE_BYTE(0);
+		MessageEnd();
+
+	}
 
 	CFFBuildableObject::RemoveQuietly();
 
@@ -435,10 +454,16 @@ void CFFManCannon::PhysicsSimulate()
 		CSingleUserRecipientFilter user(pPlayer);
 		user.MakeReliable();
 
-		UserMessageBegin(user, "ManCannonMsg");
-		WRITE_BYTE(BuildState_t::BUILDSTATE_BUILT);
-		WRITE_BYTE(iHealth);
-		MessageEnd();
+		{
+
+			FFHudMeasureScope measure(HUD_MEASURE_SEND_MANCANNON, 2);
+
+			UserMessageBegin(user, "ManCannonMsg");
+			WRITE_BYTE(BuildState_t::BUILDSTATE_BUILT);
+			WRITE_BYTE(iHealth);
+			MessageEnd();
+
+		}
 
 		m_iLastState = iState;
 	}
@@ -473,10 +498,16 @@ void CFFManCannon::Explode( void )
 	CSingleUserRecipientFilter user(pOwner);
 	user.MakeReliable();
 
-	UserMessageBegin(user, "ManCannonMsg");
-	WRITE_BYTE(BuildState_t::BUILDSTATE_NOTBUILT);
-	WRITE_BYTE(0);
-	MessageEnd();
+	{
+
+		FFHudMeasureScope measure(HUD_MEASURE_SEND_MANCANNON, 2);
+
+		UserMessageBegin(user, "ManCannonMsg");
+		WRITE_BYTE(BuildState_t::BUILDSTATE_NOTBUILT);
+		WRITE_BYTE(0);
+		MessageEnd();
+
+	}
 
 	CFFBuildableObject::Explode();
 }

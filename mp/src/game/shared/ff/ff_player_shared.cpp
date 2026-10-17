@@ -2655,3 +2655,70 @@ void CFFPlayer::ThrowPrimedGrenade( void )
 
 	ResetGrenadeState();
 }
+
+
+// Temporary A/B HUD measurements, compiled separately into client and server.
+#include "ff_hud_measure.h"
+#ifdef CLIENT_DLL
+#define FF_HUD_MEASURE_ENABLE "cl_ff_hud_measure"
+#define FF_HUD_MEASURE_REPORT "cl_ff_hud_measure_report"
+#define FF_HUD_MEASURE_RESET "cl_ff_hud_measure_reset"
+#else
+#define FF_HUD_MEASURE_ENABLE "sv_ff_hud_measure"
+#define FF_HUD_MEASURE_REPORT "sv_ff_hud_measure_report"
+#define FF_HUD_MEASURE_RESET "sv_ff_hud_measure_reset"
+#endif
+
+static ConVar ffHudMeasureEnabled(FF_HUD_MEASURE_ENABLE, "0", FCVAR_NONE,
+    "Enable temporary HUD A/B timings and counters.");
+struct FFHudMeasureStats
+{
+    double calls;
+    double changed;
+    double seconds;
+    double payloadBytes;
+};
+static FFHudMeasureStats ffHudStats[HUD_MEASURE_COUNT] = {};
+static double ffHudMeasureResetTime = 0;
+static const char* ffHudMeasureNames[HUD_MEASURE_COUNT] = {
+    "buildtimer", "medpacks", "mancannon", "timer_set", "mancannon_timer",
+    "send_timer", "send_medpacks", "send_mancannon"
+};
+
+bool FFHudMeasureEnabled() { return ffHudMeasureEnabled.GetBool(); }
+void FFHudMeasureRecord(FFHudMeasureId id, double seconds, bool changed, int payloadBytes)
+{
+    FFHudMeasureStats& stats = ffHudStats[id];
+    stats.calls += 1;
+    if (changed)
+        stats.changed += 1;
+    stats.seconds += seconds;
+    stats.payloadBytes += payloadBytes;
+}
+static void FFHudMeasureReset(const CCommand& args)
+{
+    for (int i = 0; i < HUD_MEASURE_COUNT; ++i)
+        ffHudStats[i] = FFHudMeasureStats();
+    ffHudMeasureResetTime = Plat_FloatTime();
+    Msg("HUD measurement counters reset.\n");
+}
+static void FFHudMeasureReport(const CCommand& args)
+{
+    Msg("HUD measurements: %.2f wall seconds since reset; enabled=%d\n",
+        Plat_FloatTime() - ffHudMeasureResetTime, FFHudMeasureEnabled());
+    Msg("name: calls, HUD updates, total ms, mean us/call, payload bytes\n");
+    for (int i = 0; i < HUD_MEASURE_COUNT; ++i)
+    {
+        const FFHudMeasureStats& stats = ffHudStats[i];
+        double mean = 0;
+        if (stats.calls > 0)
+            mean = stats.seconds * 1000000.0 / stats.calls;
+        Msg("%s: %.0f, %.0f, %.3f, %.3f, %.0f\n", ffHudMeasureNames[i],
+            stats.calls, stats.changed, stats.seconds * 1000.0, mean, stats.payloadBytes);
+    }
+    Msg("Payload bytes exclude protocol overhead; replicated wire bytes are not counted.\n");
+}
+static ConCommand ffHudMeasureReportCommand(FF_HUD_MEASURE_REPORT, FFHudMeasureReport,
+    "Report temporary HUD measurements.", FCVAR_NONE);
+static ConCommand ffHudMeasureResetCommand(FF_HUD_MEASURE_RESET, FFHudMeasureReset,
+    "Reset temporary HUD measurements.", FCVAR_NONE);

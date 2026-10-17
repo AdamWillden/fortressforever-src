@@ -1,4 +1,5 @@
 #include "cbase.h"
+#include "ff_hud_measure.h"
 
 #include "ff_hud_timer_build.h"
 
@@ -205,6 +206,8 @@ void CHudTimerBuild::Paint()
 void CHudTimerBuild::MsgFunc_FF_BuildTimer(
 	bf_read& msg)
 {
+	FFHudMeasureScope measure(HUD_MEASURE_BUILDTIMER);
+	measure.Changed();
 	int iBuildType = msg.ReadShort();
 	float flDuration = msg.ReadFloat();
 

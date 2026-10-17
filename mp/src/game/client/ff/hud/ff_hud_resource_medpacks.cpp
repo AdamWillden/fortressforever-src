@@ -1,4 +1,5 @@
 #include "cbase.h"
+#include "ff_hud_measure.h"
 
 #include "ff_hud_resource_medpacks.h"
 
@@ -183,6 +184,8 @@ void CHudResourceMedpacks::VidInit()
 void CHudResourceMedpacks::MsgFunc_MedpacksMsg(
 	bf_read& msg)
 {
+	FFHudMeasureScope measure(HUD_MEASURE_MEDPACKS);
+	measure.Changed();
 	int iMaxMedpacks = static_cast<int>(msg.ReadByte());
 	int iNumMedpacks = static_cast<int>(msg.ReadByte());
 

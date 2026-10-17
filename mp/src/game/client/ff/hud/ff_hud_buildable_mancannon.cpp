@@ -1,4 +1,5 @@
 #include "cbase.h"
+#include "ff_hud_measure.h"
 
 #include "ff_hud_buildable_mancannon.h"
 
@@ -401,6 +402,8 @@ void CHudBuildableManCannon::Paint()
 void CHudBuildableManCannon::MsgFunc_ManCannonMsg(
 	bf_read& msg)
 {
+	FFHudMeasureScope measure(HUD_MEASURE_MANCANNON);
+	measure.Changed();
 	BuildState_t state
 		= static_cast<BuildState_t>(msg.ReadByte());
 
@@ -447,6 +450,8 @@ void CHudBuildableManCannon::MsgFunc_ManCannonMsg(
 void CHudBuildableManCannon::MsgFunc_FF_BuildTimer(
 	bf_read& msg)
 {
+	FFHudMeasureScope measure(HUD_MEASURE_MANCANNON_TIMER);
+	measure.Changed();
 	int iBuildType = msg.ReadShort();
 
 	if (iBuildType != FF_BUILD_MANCANNON)

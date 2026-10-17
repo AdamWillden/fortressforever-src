@@ -6,6 +6,7 @@
 //=============================================================================
 
 #include "cbase.h"
+#include "ff_hud_measure.h"
 #include "ff_player.h"
 #include "ff_gamerules.h"
 #include "ff_entity_system.h"	// Entity system
@@ -2176,10 +2177,13 @@ void CFFPlayer::Event_Killed( const CTakeDamageInfo &info )
 		// Mirv: Cancel build timer
 		CSingleUserRecipientFilter user(this);
 		user.MakeReliable();
-		UserMessageBegin(user, "FF_BuildTimer");
-		WRITE_SHORT(m_iCurBuild);
-		WRITE_FLOAT(0);
-		MessageEnd();
+		{
+			FFHudMeasureScope measure(HUD_MEASURE_SEND_TIMER, 6);
+			UserMessageBegin(user, "FF_BuildTimer");
+			WRITE_SHORT(m_iCurBuild);
+			WRITE_FLOAT(0);
+			MessageEnd();
+		}
 	}
 
 	// If the tag is still active, award a point
@@ -3878,10 +3882,13 @@ void CFFPlayer::PreBuildGenericThink( void )
 			// Mirv: Start build timer
 			CSingleUserRecipientFilter user( this );
 			user.MakeReliable();
-			UserMessageBegin( user, "FF_BuildTimer" );
-				WRITE_SHORT( m_iCurBuild );
-				WRITE_FLOAT( m_flBuildTime - gpGlobals->curtime );
-			MessageEnd();
+			{
+				FFHudMeasureScope measure(HUD_MEASURE_SEND_TIMER, 6);
+				UserMessageBegin( user, "FF_BuildTimer" );
+					WRITE_SHORT( m_iCurBuild );
+					WRITE_FLOAT( m_flBuildTime - gpGlobals->curtime );
+				MessageEnd();
+			}
 		}
 		else
 		{
@@ -3932,10 +3939,13 @@ void CFFPlayer::PreBuildGenericThink( void )
 				// Mirv: Cancel build timer
 				CSingleUserRecipientFilter user(this);
 				user.MakeReliable();
-				UserMessageBegin(user, "FF_BuildTimer");
-				WRITE_SHORT(FF_BUILD_NONE);
-				WRITE_FLOAT(0);
-				MessageEnd();
+				{
+					FFHudMeasureScope measure(HUD_MEASURE_SEND_TIMER, 6);
+					UserMessageBegin(user, "FF_BuildTimer");
+					WRITE_SHORT(FF_BUILD_NONE);
+					WRITE_FLOAT(0);
+					MessageEnd();
+				}
 
 				// Re-initialize
 				m_iCurBuild = FF_BUILD_NONE;
@@ -7263,10 +7273,16 @@ void CFFPlayer::SendMedpacksMsg()
 	CSingleUserRecipientFilter user(this);
 	user.MakeReliable();
 
-	UserMessageBegin(user, "MedpacksMsg");
-		WRITE_BYTE(iMaxMedpacks);
-		WRITE_BYTE(iNumMedpacks);
-	MessageEnd();
+	{
+
+		FFHudMeasureScope measure(HUD_MEASURE_SEND_MEDPACKS, 2);
+
+		UserMessageBegin(user, "MedpacksMsg");
+			WRITE_BYTE(iMaxMedpacks);
+			WRITE_BYTE(iNumMedpacks);
+		MessageEnd();
+
+	}
 }
 
 // Find a map guide
@@ -7862,10 +7878,13 @@ void CFFPlayer::SpyStartSabotaging(CFFBuildableObject *pBuildable)
 
 	CSingleUserRecipientFilter user(this);
 	user.MakeReliable();
-	UserMessageBegin(user, "FF_BuildTimer");
-	WRITE_SHORT(iBuildableType);
-	WRITE_FLOAT(3.0f);
-	MessageEnd();
+	{
+		FFHudMeasureScope measure(HUD_MEASURE_SEND_TIMER, 6);
+		UserMessageBegin(user, "FF_BuildTimer");
+		WRITE_SHORT(iBuildableType);
+		WRITE_FLOAT(3.0f);
+		MessageEnd();
+	}
 
 	// Now remember what we're sabotaging
 	m_hSabotaging = pBuildable;
@@ -7883,10 +7902,13 @@ void CFFPlayer::SpyStopSabotaging()
 
 	CSingleUserRecipientFilter user(this);
 	user.MakeReliable();
-	UserMessageBegin(user, "FF_BuildTimer");
-	WRITE_SHORT(0);
-	WRITE_FLOAT(0);
-	MessageEnd();
+	{
+		FFHudMeasureScope measure(HUD_MEASURE_SEND_TIMER, 6);
+		UserMessageBegin(user, "FF_BuildTimer");
+		WRITE_SHORT(0);
+		WRITE_FLOAT(0);
+		MessageEnd();
+	}
 
 	// Remember that we aren't sabotaging
 	m_hSabotaging = NULL;
