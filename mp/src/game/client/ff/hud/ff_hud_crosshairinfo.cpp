@@ -12,7 +12,7 @@
 //		First created
 
 #include "cbase.h"
-#include "hudelement.h"
+#include "ff_hud_crosshairinfo.h"
 #include "hud_macros.h"
 #include "iclientmode.h"
 #include "view.h"
@@ -36,7 +36,6 @@ using namespace vgui;
 #include "ff_shareddefs.h"
 #include "ff_playerclass_parse.h"
 
-static ConVar hud_centerid( "hud_centerid", "1", FCVAR_ARCHIVE );
 #define CROSSHAIRTYPE_NORMAL 0
 #define CROSSHAIRTYPE_DISPENSER 1
 #define CROSSHAIRTYPE_SENTRYGUN 2
@@ -48,89 +47,529 @@ static ConVar hud_centerid( "hud_centerid", "1", FCVAR_ARCHIVE );
 //	class CHudCrosshairInfo
 //
 //=============================================================================
-class CHudCrosshairInfo : public CHudElement, public vgui::Panel
+CHudCrosshairInfoPanel::CHudCrosshairInfoPanel(const char* pElementName, int iTargetType)
+	: CHudElement(pElementName), BaseClass(NULL, pElementName), m_iTargetType(iTargetType)
 {
-private:
-	DECLARE_CLASS_SIMPLE( CHudCrosshairInfo, vgui::Panel );
-
-public:
-	CHudCrosshairInfo( const char *pElementName ) : CHudElement( pElementName ), vgui::Panel( NULL, "HudCrosshairInfo" )
+	SetParent(g_pClientMode->GetViewport());
+	SetHiddenBits(DEFAULT_HIDDEN_BITS);
+	SetUseToggleText(true);
+	if (m_iTargetType == CROSSHAIRTYPE_DISPENSER)
 	{
-		SetParent( g_pClientMode->GetViewport() );
-		SetHiddenBits( HIDEHUD_PLAYERDEAD | HIDEHUD_SPECTATING | HIDEHUD_UNASSIGNED );
-
-		vgui::ivgui()->AddTickSignal( GetVPanel(), 100 );
-
-		m_flDuration = 0.2f;
-		m_flDrawDuration = 2.0f;
+		m_bHideAmmo = false;
+		m_bHideArmor = true;
+		m_bHideCells = true;
+		m_bHideNails = true;
+		m_bHideShells = true;
+		m_bHideRockets = true;
 	}
 
-	~CHudCrosshairInfo( void ) {}
-
-	void Init( void );
-	void VidInit( void );
-	void OnTick( void );
-	void Paint( void );
-
-	void Reset( void )
-	{ 
-		if( m_flDrawTime != 0.0f )
-			m_flDrawTime = 0.0f; 
+	switch (m_iTargetType)
+	{
+	case CROSSHAIRTYPE_NORMAL:
+		SetHeaderIconChar('s');
+		break;
+	case CROSSHAIRTYPE_SENTRYGUN:
+		SetHeaderIconChar('1');
+		break;
+	case CROSSHAIRTYPE_DISPENSER:
+		SetHeaderIconChar('4');
+		break;
+	case CROSSHAIRTYPE_MANCANNON:
+		SetHeaderIconChar('6');
+		break;
 	}
 
-protected:
-	float		m_flStartTime;
-	float		m_flDuration;
-	wchar_t		m_pText[ 256 ];	// Unicode text buffer
-	float		m_flDrawTime;
-	float		m_flDrawDuration;
-
-	// For center printing
-	float		m_flXOffset;
-	float		m_flYOffset;
-	// For color
-	int			m_iTeam;
-	int			m_iClass;
-
-private:
-
-	// Stuff we need to know
-	CPanelAnimationVar( vgui::HFont, m_hTextFont, "TextFont", "ChatFont" );
-	CPanelAnimationVarAliasType( float, text1_xpos, "text1_xpos", "8", "proportional_float" );
-	CPanelAnimationVarAliasType( float, text1_ypos, "text1_ypos", "20", "proportional_float" );
-};
-
-DECLARE_HUDELEMENT( CHudCrosshairInfo );
+	for (int i = 0; i < QUANTITY_COUNT; ++i)
+	{
+		m_items[i] = nullptr;
+		m_values[i] = -1;
+		m_maximums[i] = 0;
+		m_quantityDisplays[i] = DISPLAY_MAX;
+	}
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CHudCrosshairInfo::Init( void )
+void CHudCrosshairInfoPanel::Init()
 {
-	m_pText[ 0 ] = '\0';
+	ivgui()->AddTickSignal(GetVPanel(), 100);
+	const char* names[QUANTITY_COUNT] = {
+		"Health", "Ammo", "Armor", "Cells", "Rockets", "Nails", "Shells", "Level"
+	};
+	const char* labels[QUANTITY_COUNT] = {
+		"#FF_ITEM_HEALTH", "#FF_ITEM_AMMO", "#FF_ITEM_ARMOR", "#FF_ITEM_CELLS",
+		"#FF_ITEM_ROCKETS", "#FF_ITEM_NAILS", "#FF_ITEM_SHELLS", "#FF_ITEM_LEVEL"
+	};
+	for (int i = 0; i < QUANTITY_COUNT; ++i)
+	{
+		const bool bSupported = i == HEALTH
+			|| (i == ARMOR && (m_iTargetType == CROSSHAIRTYPE_NORMAL || m_iTargetType == CROSSHAIRTYPE_DISPENSER))
+			|| (i == AMMO && m_iTargetType == CROSSHAIRTYPE_DISPENSER)
+			|| (i >= CELLS && i <= SHELLS && m_iTargetType == CROSSHAIRTYPE_DISPENSER)
+			|| ((i == LEVEL || i == SHELLS || i == ROCKETS) && m_iTargetType == CROSSHAIRTYPE_SENTRYGUN);
+		if (!bSupported)
+			continue;
+
+		m_items[i] = AddItem(names[i]);
+		m_items[i]->SetLabel(labels[i]);
+		m_items[i]->SetAmountDisplay(DISPLAY_MAX);
+		DisableItem(m_items[i]);
+	}
+
+	switch (m_iTargetType)
+	{
+	case CROSSHAIRTYPE_NORMAL:
+		AddPanelToHudOptions(
+			"CrosshairInfoPlayer",
+			"#HudPanel_Player",
+			"CrosshairInfo",
+			"#HudPanel_CrosshairInfo");
+		break;
+	case CROSSHAIRTYPE_SENTRYGUN:
+		AddPanelToHudOptions(
+			"CrosshairInfoSentry",
+			"#HudPanel_SentryGun",
+			"CrosshairInfo",
+			"#HudPanel_CrosshairInfo");
+		break;
+	case CROSSHAIRTYPE_DISPENSER:
+		AddPanelToHudOptions(
+			"CrosshairInfoDispenser",
+			"#HudPanel_Dispenser",
+			"CrosshairInfo",
+			"#HudPanel_CrosshairInfo");
+		break;
+	case CROSSHAIRTYPE_MANCANNON:
+		AddPanelToHudOptions(
+			"CrosshairInfoManCannon",
+			"#HudPanel_ManCannon",
+			"CrosshairInfo",
+			"#HudPanel_CrosshairInfo");
+		break;
+	}
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: Reset on map/vgui load
 //-----------------------------------------------------------------------------
-void CHudCrosshairInfo::VidInit( void )
-{	
-	SetPaintBackgroundEnabled( false );
-	m_pText[ 0 ] = '\0';
-	m_flStartTime = 0.0f;		// |-- Mirv: Fix messages reappearing next map
-	m_flDrawTime = 0.0f;
-	m_iTeam = 0;
-	m_iClass = 0;
-
-	// Make the panel as big as the screen
-	SetPos( 0, 0 );
-	SetWide( scheme()->GetProportionalScaledValue( 640 ) );
-	SetTall( scheme()->GetProportionalScaledValue( 480 ) );
+void CHudCrosshairInfoPanel::VidInit()
+{
+	Reset();
+	ApplyDisplayOptions();
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: Trace out and touch someone
 //-----------------------------------------------------------------------------
+
+
+void CHudCrosshairInfoPanel::Reset()
+{
+	if (IsInPreviewMode())
+		return;
+
+	m_flDrawTime = -m_flDrawDuration;
+	for (int i = 0; i < QUANTITY_COUNT; ++i)
+		SetQuantity(static_cast<Quantity>(i), -1, 0);
+	UpdateQuantityVisibility();
+}
+
+void CHudCrosshairInfoPanel::SetQuantity(Quantity quantity, int iValue, int iMaximum)
+{
+	m_values[quantity] = iValue;
+	m_maximums[quantity] = iMaximum;
+	if (m_items[quantity] && iValue >= 0 && iMaximum > 0)
+	{
+		m_items[quantity]->SetAmountMax(iMaximum);
+		m_items[quantity]->SetAmount(iValue);
+	}
+}
+
+void CHudCrosshairInfoPanel::UpdateQuantityVisibility()
+{
+	for (int i = 0; i < QUANTITY_COUNT; ++i)
+	{
+		if (!m_items[i])
+			continue;
+
+		bool bShow = m_values[i] >= 0 && m_maximums[i] > 0;
+		if (i == AMMO)
+			bShow = bShow && !m_bHideAmmo;
+		else if (i == ARMOR)
+			bShow = bShow && !m_bHideArmor;
+		else if (i == CELLS)
+			bShow = bShow && !m_bHideCells;
+		else if (i == NAILS)
+			bShow = bShow && !m_bHideNails;
+		else if (i == SHELLS)
+			bShow = bShow && !m_bHideShells;
+		else if (i == ROCKETS)
+			bShow = bShow && !m_bHideRockets;
+		else if (i == LEVEL)
+			bShow = bShow && !m_bHideLevel;
+
+		if (bShow)
+			EnableItem(m_items[i]);
+		else
+			DisableItem(m_items[i]);
+	}
+}
+
+bool CHudCrosshairInfoPanel::ShouldDraw()
+{
+	if (!CHudElement::ShouldDraw())
+		return false;
+
+	if (IsInPreviewMode())
+		return true;
+
+	if (m_bOwnBuildable && !m_bShowOwnBuildable)
+		return false;
+
+	return gpGlobals->curtime < m_flDrawTime + m_flDrawDuration;
+}
+
+int CHudCrosshairInfoPanel::GetColorTeamNumber()
+{
+	if (IsInPreviewMode())
+		return BaseClass::GetColorTeamNumber();
+
+	return m_iColorTeam;
+}
+
+void CHudCrosshairInfoPanel::ApplyDisplayOptions()
+{
+	if (m_bShowPanel)
+	{
+		if (IsInPreviewMode())
+			SetHiddenBits(0);
+		else
+			SetHiddenBits(DEFAULT_HIDDEN_BITS);
+	}
+	else
+	{
+		SetHiddenBits(HIDEHUD_ALWAYS);
+	}
+}
+
+void CHudCrosshairInfoPanel::ShowPreview()
+{
+	for (int i = 0; i < QUANTITY_COUNT; ++i)
+		SetQuantity(static_cast<Quantity>(i), -1, 0);
+
+	SetQuantity(HEALTH, 75, 100);
+	const char* pszPreviewTitle = nullptr;
+	wchar_t* localized = g_pVGuiLocalize->Find("#HudPanel_Player");
+	if (localized)
+		SetHeaderText(localized);
+
+	switch (m_iTargetType)
+	{
+	case CROSSHAIRTYPE_NORMAL:
+		pszPreviewTitle = Class_IntToResourceString(CLASS_MEDIC);
+		SetQuantity(ARMOR, 50, 100);
+		break;
+	case CROSSHAIRTYPE_SENTRYGUN:
+		pszPreviewTitle = "#HudPanel_SentryGun";
+		SetQuantity(LEVEL, 2, 3);
+		SetQuantity(SHELLS, 75, 100);
+		SetQuantity(ROCKETS, 10, 20);
+		break;
+	case CROSSHAIRTYPE_DISPENSER:
+		pszPreviewTitle = "#HudPanel_Dispenser";
+		SetQuantity(AMMO, 60, 100);
+		SetQuantity(ARMOR, 50, 100);
+		SetQuantity(CELLS, 60, 100);
+		SetQuantity(ROCKETS, 20, 50);
+		SetQuantity(NAILS, 40, 100);
+		SetQuantity(SHELLS, 60, 100);
+		break;
+	case CROSSHAIRTYPE_MANCANNON:
+		pszPreviewTitle = "#HudPanel_ManCannon";
+		break;
+	}
+
+	if (pszPreviewTitle)
+	{
+		localized = g_pVGuiLocalize->Find(pszPreviewTitle);
+		if (localized)
+			SetText(localized);
+	}
+}
+
+void CHudCrosshairInfoPanel::AddPanelSpecificOptions(KeyValues* kvPanelSpecificOptions)
+{
+	AddBooleanOption(
+		kvPanelSpecificOptions,
+		"ShowPanel",
+		"#HudPanel_Option_ShowPanel",
+		true,
+		0);
+	if (m_iTargetType != CROSSHAIRTYPE_NORMAL)
+		AddBooleanOption(
+			kvPanelSpecificOptions,
+			"ShowOwnBuildable",
+			"#HudPanel_Option_ShowOwnBuildable",
+			false,
+			0);
+
+	if (m_iTargetType == CROSSHAIRTYPE_DISPENSER)
+		if (m_items[AMMO])
+		AddBooleanOption(
+			kvPanelSpecificOptions,
+			"HideAmmo",
+			"#HudPanel_Option_HideAmmo",
+			false,
+			0);
+	if (m_items[ARMOR])
+		AddBooleanOption(
+			kvPanelSpecificOptions,
+			"HideArmor",
+			"#HudPanel_Option_HideArmor",
+			m_iTargetType == CROSSHAIRTYPE_DISPENSER,
+			0);
+
+	if (m_items[CELLS])
+		AddBooleanOption(
+			kvPanelSpecificOptions,
+			"HideCells",
+			"#HudPanel_Option_HideCells",
+			m_iTargetType == CROSSHAIRTYPE_DISPENSER,
+			0);
+
+	if (m_items[NAILS])
+		AddBooleanOption(
+			kvPanelSpecificOptions,
+			"HideNails",
+			"#HudPanel_Option_HideNails",
+			m_iTargetType == CROSSHAIRTYPE_DISPENSER,
+			0);
+
+	if (m_items[SHELLS])
+		AddBooleanOption(
+			kvPanelSpecificOptions,
+			"HideShells",
+			"#HudPanel_Option_HideShells",
+			m_iTargetType == CROSSHAIRTYPE_DISPENSER,
+			0);
+
+	if (m_items[ROCKETS])
+		AddBooleanOption(
+			kvPanelSpecificOptions,
+			"HideRockets",
+			"#HudPanel_Option_HideRockets",
+			m_iTargetType == CROSSHAIRTYPE_DISPENSER,
+			0);
+
+	if (m_items[LEVEL])
+		AddBooleanOption(
+			kvPanelSpecificOptions,
+			"HideLevel",
+			"#HudPanel_Option_HideLevel",
+			false,
+			0);
+	for (int i = 0; i < QUANTITY_COUNT; ++i)
+	{
+		if (!m_items[i])
+			continue;
+
+		char szOption[64], szLabel[96];
+		Q_snprintf(
+			szOption,
+			sizeof(szOption),
+			"%sDisplay",
+			m_items[i]->GetName());
+		Q_snprintf(
+			szLabel,
+			sizeof(szLabel),
+			"#HudPanel_Option_%sDisplay",
+			m_items[i]->GetName());
+		AddComboOption(
+			kvPanelSpecificOptions,
+			szOption,
+			szLabel,
+			s_kvAmountDisplayOptions->MakeCopy(),
+			DISPLAY_MAX,
+			1);
+	}
+}
+
+KeyValues* CHudCrosshairInfoPanel::GetDefaultStyleData()
+{
+	KeyValues* kvPreset = BaseClass::GetDefaultStyleData();
+	kvPreset->SetInt("x", 285);
+	kvPreset->SetInt("y", 240);
+	kvPreset->SetInt("alignH", ALIGN_RIGHT);
+	kvPreset->SetInt("alignV", ALIGN_MIDDLE);
+	kvPreset->SetInt("showHeaderIcon", 1);
+	KeyValues* kvPanelSpecificValues = new KeyValues("PanelSpecificValues");
+	kvPanelSpecificValues->SetBool("ShowPanel", true);
+	kvPanelSpecificValues->SetBool("HideAmmo", false);
+	kvPanelSpecificValues->SetBool("HideArmor", m_iTargetType == CROSSHAIRTYPE_DISPENSER);
+	if (m_items[CELLS])
+		kvPanelSpecificValues->SetBool("HideCells", m_iTargetType == CROSSHAIRTYPE_DISPENSER);
+
+	if (m_items[NAILS])
+		kvPanelSpecificValues->SetBool("HideNails", m_iTargetType == CROSSHAIRTYPE_DISPENSER);
+
+	if (m_items[SHELLS])
+		kvPanelSpecificValues->SetBool("HideShells", m_iTargetType == CROSSHAIRTYPE_DISPENSER);
+
+	if (m_items[ROCKETS])
+		kvPanelSpecificValues->SetBool("HideRockets", m_iTargetType == CROSSHAIRTYPE_DISPENSER);
+
+	if (m_items[LEVEL])
+		kvPanelSpecificValues->SetBool("HideLevel", false);
+
+	kvPanelSpecificValues->SetBool("ShowOwnBuildable", false);
+	for (int i = 0; i < QUANTITY_COUNT; ++i)
+	{
+		if (!m_items[i])
+			continue;
+
+		char szOption[64];
+		Q_snprintf(
+			szOption,
+			sizeof(szOption),
+			"%sDisplay",
+			m_items[i]->GetName());
+		kvPanelSpecificValues->SetInt(szOption, DISPLAY_MAX);
+	}
+
+	kvPreset->AddSubKey(kvPanelSpecificValues);
+	return kvPreset;
+}
+
+void CHudCrosshairInfoPanel::ApplyStyleData(KeyValues* kvStyleData, KeyValues* kvDefaultStyleData)
+{
+	const bool bWasPreview = IsInPreviewMode();
+	BaseClass::ApplyStyleData(kvStyleData, kvDefaultStyleData);
+	KeyValues* kvValues = kvStyleData->FindKey("PanelSpecificValues", true);
+	KeyValues* kvDefaults = kvDefaultStyleData->FindKey("PanelSpecificValues", true);
+	int iShowPanel = GetInt("ShowPanel", kvValues, kvDefaults);
+	if (iShowPanel != -1)
+		m_bShowPanel = iShowPanel == 1;
+
+	int iHideAmmo = GetInt("HideAmmo", kvValues, kvDefaults);
+	if (iHideAmmo != -1)
+		m_bHideAmmo = iHideAmmo == 1;
+
+	int iHideArmor = GetInt("HideArmor", kvValues, kvDefaults);
+	if (iHideArmor != -1)
+		m_bHideArmor = iHideArmor == 1;
+
+	int iShowOwnBuildable = GetInt("ShowOwnBuildable", kvValues, kvDefaults);
+	if (iShowOwnBuildable != -1)
+		m_bShowOwnBuildable = iShowOwnBuildable == 1;
+
+	int iHideCells = GetInt("HideCells", kvValues, kvDefaults);
+	if (iHideCells != -1)
+		m_bHideCells = iHideCells == 1;
+
+	int iHideNails = GetInt("HideNails", kvValues, kvDefaults);
+	if (iHideNails != -1)
+		m_bHideNails = iHideNails == 1;
+
+	int iHideShells = GetInt("HideShells", kvValues, kvDefaults);
+	if (iHideShells != -1)
+		m_bHideShells = iHideShells == 1;
+
+	int iHideRockets = GetInt("HideRockets", kvValues, kvDefaults);
+	if (iHideRockets != -1)
+		m_bHideRockets = iHideRockets == 1;
+
+	int iHideLevel = GetInt("HideLevel", kvValues, kvDefaults);
+	if (iHideLevel != -1)
+		m_bHideLevel = iHideLevel == 1;
+
+	for (int i = 0; i < QUANTITY_COUNT; ++i)
+	{
+		if (!m_items[i])
+			continue;
+
+		char szOption[64];
+		Q_snprintf(
+			szOption,
+			sizeof(szOption),
+			"%sDisplay",
+			m_items[i]->GetName());
+		std::optional<AmountDisplay> display = GetAmountDisplay(szOption, kvValues, kvDefaults);
+		if (display.has_value())
+			m_quantityDisplays[i] = display.value();
+
+		m_items[i]->SetAmountDisplay(m_quantityDisplays[i]);
+	}
+
+	if (IsInPreviewMode())
+		ShowPreview();
+	else if (bWasPreview)
+		Reset();
+
+	UpdateQuantityVisibility();
+	ApplyDisplayOptions();
+}
+
+DECLARE_HUDELEMENT(CHudCrosshairInfo);
+DECLARE_HUDELEMENT(CHudCrosshairInfoPlayer);
+DECLARE_HUDELEMENT(CHudCrosshairInfoSentry);
+DECLARE_HUDELEMENT(CHudCrosshairInfoDispenser);
+DECLARE_HUDELEMENT(CHudCrosshairInfoManCannon);
+
+CHudCrosshairInfoPlayer::CHudCrosshairInfoPlayer(const char* pElementName)
+	: CHudCrosshairInfoPanel(pElementName, CROSSHAIRTYPE_NORMAL)
+{
+}
+
+CHudCrosshairInfoSentry::CHudCrosshairInfoSentry(const char* pElementName)
+	: CHudCrosshairInfoPanel(pElementName, CROSSHAIRTYPE_SENTRYGUN)
+{
+}
+
+CHudCrosshairInfoDispenser::CHudCrosshairInfoDispenser(const char* pElementName)
+	: CHudCrosshairInfoPanel(pElementName, CROSSHAIRTYPE_DISPENSER)
+{
+}
+
+CHudCrosshairInfoManCannon::CHudCrosshairInfoManCannon(const char* pElementName)
+	: CHudCrosshairInfoPanel(pElementName, CROSSHAIRTYPE_MANCANNON)
+{
+}
+
+CHudCrosshairInfo::CHudCrosshairInfo(const char* pElementName)
+	: CHudElement(pElementName), BaseClass(NULL, "HudCrosshairInfo")
+{
+	SetParent(g_pClientMode->GetViewport());
+	SetPaintEnabled(false);
+	SetPaintBackgroundEnabled(false);
+}
+
+void CHudCrosshairInfo::Init()
+{
+	ivgui()->AddTickSignal(GetVPanel(), 100);
+}
+
+void CHudCrosshairInfo::VidInit()
+{
+	Reset();
+}
+
+void CHudCrosshairInfo::Reset()
+{
+	m_flStartTime = 0.0f;
+	CHudCrosshairInfoPanel* panels[] = {
+		GET_HUDELEMENT(CHudCrosshairInfoPlayer),
+		GET_HUDELEMENT(CHudCrosshairInfoSentry),
+		GET_HUDELEMENT(CHudCrosshairInfoDispenser),
+		GET_HUDELEMENT(CHudCrosshairInfoManCannon)
+	};
+	for (int i = 0; i < ARRAYSIZE(panels); ++i)
+	{
+		if (panels[i] && !panels[i]->IsInPreviewMode())
+			panels[i]->Reset();
+	}
+}
+
 void CHudCrosshairInfo::OnTick( void )
 {
 	if( !engine->IsInGame() )
@@ -141,7 +580,10 @@ void CHudCrosshairInfo::OnTick( void )
 		return;
 
 	if( !pPlayer->IsAlive() )
+	{
 		Reset();
+		return;
+	}
 
 	// Check for crosshair info every x seconds
 	if( m_flStartTime < gpGlobals->curtime )
@@ -269,12 +711,12 @@ void CHudCrosshairInfo::OnTick( void )
 				}
 
 				// Default
-				int iHealth = -1, iArmor = -1, iCells = -1, iRockets = -1, iNails = -1, iShells = -1, iLevel = -1, iFuseTime = -1;
+				int iHealth = -1, iArmor = -1, iCells = -1, iRockets = -1, iNails = -1, iShells = -1, iLevel = -1;
 				bool bOwnBuildable = false;
 				int CROSSHAIRTYPE = CROSSHAIRTYPE_NORMAL;
 				// Default
 				m_iTeam = pHitPlayer->GetTeamNumber();
-				m_iClass = pHitPlayer->GetTeamNumber();
+				m_iClass = g_FF_PR->GetClass(pHitPlayer->index);
 				
 				if ( (pPlayer == pHitPlayer) && (bBuildable) ) // looking at our own buildable
 					bOwnBuildable = true;
@@ -304,12 +746,8 @@ void CHudCrosshairInfo::OnTick( void )
 						{
 							CROSSHAIRTYPE = CROSSHAIRTYPE_SENTRYGUN;
 							iLevel = ( ( C_FFSentryGun * )pBuildable )->GetLevel();
-							iRockets = ( ( C_FFSentryGun * )pBuildable )->GetRocketsPercent();
-							iShells = ( ( C_FFSentryGun * )pBuildable )->GetShellsPercent();
-							iArmor = ( ( C_FFSentryGun * )pBuildable )->GetAmmoPercent();
-
-							if (iArmor >= 128) //VOOGRU: when the sg has no rockets it would show ammopercent+128.
-								iArmor -= 128;
+							iRockets = ( ( C_FFSentryGun * )pBuildable )->GetRockets();
+							iShells = ( ( C_FFSentryGun * )pBuildable )->GetShells();
 						}
 						else if( pBuildable->Classify() == CLASS_MANCANNON )
 						{
@@ -493,127 +931,94 @@ void CHudCrosshairInfo::OnTick( void )
 					wcscpy( wszClass, L"CLASS" );	// TODO: fix to show English version of class name :/
 				}
 				
-				if (CROSSHAIRTYPE == CROSSHAIRTYPE_DISPENSER)
+				// Only the current target type should linger; leave editor previews alone.
+				CHudCrosshairInfoPanel* panels[] = {
+					GET_HUDELEMENT(CHudCrosshairInfoPlayer),
+					GET_HUDELEMENT(CHudCrosshairInfoDispenser),
+					GET_HUDELEMENT(CHudCrosshairInfoSentry),
+					GET_HUDELEMENT(CHudCrosshairInfoManCannon)
+				};
+				CHudCrosshairInfoPanel* pTargetPanel = nullptr;
+				for (int i = 0; i < ARRAYSIZE(panels); ++i)
 				{
-					char szHealth[ 5 ], szArmor[ 5 ], szRockets[ 5 ], szShells[ 5 ], szCells[ 5 ], szNails[ 5 ];
-					Q_snprintf( szHealth, 5, "%i", iHealth );
-					Q_snprintf( szArmor, 5, "%i", iArmor );
-					Q_snprintf( szRockets, 5, "%i", iRockets );
-					Q_snprintf( szShells, 5, "%i", iShells );
-					Q_snprintf( szCells, 5, "%i", iCells );
-					Q_snprintf( szNails, 5, "%i", iNails );
-					
-					wchar_t wszHealth[ 10 ], wszArmor[ 10 ], wszRockets[ 10 ], wszCells[ 10 ], wszShells[ 10 ], wszNails[ 10 ];
+					CHudCrosshairInfoPanel* pPanel = panels[i];
+					if (!pPanel || pPanel->IsInPreviewMode())
+						continue;
 
-                    g_pVGuiLocalize->ConvertANSIToUnicode( szHealth, wszHealth, sizeof( wszHealth ) );
-					g_pVGuiLocalize->ConvertANSIToUnicode( szArmor, wszArmor, sizeof( wszArmor ) );
-					g_pVGuiLocalize->ConvertANSIToUnicode( szRockets, wszRockets, sizeof( wszRockets ) );
-					g_pVGuiLocalize->ConvertANSIToUnicode( szCells, wszCells, sizeof( wszCells ) );
-					g_pVGuiLocalize->ConvertANSIToUnicode( szShells, wszShells, sizeof( wszShells ) );
-					g_pVGuiLocalize->ConvertANSIToUnicode( szNails, wszNails, sizeof( wszNails ) );
-					
-					if (bOwnBuildable)
-						V_snwprintf( m_pText, 255, L"Your Dispenser - Cells(%ls) Rkts(%ls) Nls(%ls) Shls(%ls) Armr(%ls)", wszCells, wszRockets, wszNails, wszShells, wszArmor );
+					if (pPanel->m_iTargetType == CROSSHAIRTYPE)
+						pTargetPanel = pPanel;
 					else
-						V_snwprintf( m_pText, 255, L"(%ls) %ls - H: %ls", wszClass, wszName, wszHealth );
+						pPanel->Reset();
 				}
-				else if (CROSSHAIRTYPE == CROSSHAIRTYPE_SENTRYGUN)
+
+				if (!pTargetPanel)
+					return;
+
+				pTargetPanel->m_bOwnBuildable = bOwnBuildable;
+				pTargetPanel->SetHeaderText(wszName);
+				pTargetPanel->SetText(wszClass);
+				pTargetPanel->m_iColorTeam = m_iTeam;
+				pTargetPanel->SetTeamColor();
+
+				for (int i = 0; i < CHudCrosshairInfoPanel::QUANTITY_COUNT; ++i)
+					pTargetPanel->SetQuantity(static_cast<CHudCrosshairInfoPanel::Quantity>(i), -1, 0);
+
+				if (bBuildable)
 				{
-					char szHealth[ 5 ], szRockets[ 5 ], szShells[ 5 ], szLevel[ 5 ], szArmor[ 5 ];
-					Q_snprintf( szHealth, 5, "%i", iHealth );
-					Q_snprintf( szLevel, 5, "%i", iLevel );
-					Q_snprintf( szRockets, 5, "%i", iRockets );
-					Q_snprintf( szShells, 5, "%i", iShells );
-					Q_snprintf( szArmor, 5, "%i", iArmor );
-
-					
-					wchar_t wszHealth[ 10 ], wszRockets[ 10 ], wszShells[ 10 ], wszLevel[ 10 ], wszArmor[ 10 ];
-
-                    g_pVGuiLocalize->ConvertANSIToUnicode( szHealth, wszHealth, sizeof( wszHealth ) );
-					g_pVGuiLocalize->ConvertANSIToUnicode( szRockets, wszRockets, sizeof( wszRockets ) );
-					g_pVGuiLocalize->ConvertANSIToUnicode( szLevel, wszLevel, sizeof( wszLevel ) );
-					g_pVGuiLocalize->ConvertANSIToUnicode( szShells, wszShells, sizeof( wszShells ) );
-					g_pVGuiLocalize->ConvertANSIToUnicode( szArmor, wszArmor, sizeof( wszArmor ) );
-					
-					if (bOwnBuildable)
-						V_snwprintf( m_pText, 255, L"Your Sentry Gun: Level %ls - Health: %ls Ammo: %ls", wszLevel, wszHealth , wszArmor );
-					else
-						V_snwprintf( m_pText, 255, L"(%ls) %ls - H: %ls", wszClass, wszName, wszHealth );
-				}
-				else if (CROSSHAIRTYPE == CROSSHAIRTYPE_DETPACK)
-				{
-					char szFuseTime[ 5 ];
-					Q_snprintf( szFuseTime, 5, "%i", iFuseTime );
-
-					
-					wchar_t wszFuseTime[ 10 ];
-
-                    g_pVGuiLocalize->ConvertANSIToUnicode( szFuseTime, wszFuseTime, sizeof( wszFuseTime ) );
-					
-					if (bOwnBuildable)
-						V_snwprintf( m_pText, 255, L"Your %ls Second Detpack", wszFuseTime );
-					else
-						V_snwprintf( m_pText, 255, L"(%ls) %ls", wszClass, wszName );
-				}
-				//Jumppad displayed here -GreenMushy
-				else if( CROSSHAIRTYPE == CROSSHAIRTYPE_MANCANNON )
-				{
-					char szHealth[ 5 ];
-					Q_snprintf( szHealth, 5, "%i", iHealth );
-					
-					wchar_t wszHealth[ 10 ];
-					g_pVGuiLocalize->ConvertANSIToUnicode( szHealth, wszHealth, sizeof( wszHealth ) );
-
-					if (bOwnBuildable)
-						V_snwprintf( m_pText, 255, L"Your Jump Pad - Health: %ls", wszHealth );
-					else
-						V_snwprintf( m_pText, 255, L"(%ls) %ls - H: %ls", wszClass, wszName, wszHealth );
-				}
-				// else CROSSHAIRTYPE_NORMAL
-				else if( ( iHealth != -1 ) && ( iArmor != -1 ) )
-				{
-					char szHealth[ 5 ], szArmor[ 5 ];
-					Q_snprintf( szHealth, 5, "%i", iHealth );
-					Q_snprintf( szArmor, 5, "%i", iArmor );
-					
-					wchar_t wszHealth[ 10 ], wszArmor[ 10 ];
-
-                       g_pVGuiLocalize->ConvertANSIToUnicode( szHealth, wszHealth, sizeof( wszHealth ) );
-					g_pVGuiLocalize->ConvertANSIToUnicode( szArmor, wszArmor, sizeof( wszArmor ) );
-
-					V_snwprintf( m_pText, 255, L"(%ls) %ls - HP: %ls, AP: %ls", wszClass, wszName, wszHealth, wszArmor );
-				}
-				else if ( iHealth != -1 )
-				{
-					char szHealth[ 5 ];
-					Q_snprintf( szHealth, 5, "%i", iHealth );
-					
-					wchar_t wszHealth[ 10 ];
-
-					g_pVGuiLocalize->ConvertANSIToUnicode( szHealth, wszHealth, sizeof( wszHealth ) );
-
-					V_snwprintf( m_pText, 255, L"(%ls) %ls - H: %ls", wszClass, wszName, wszHealth );
+					C_FFBuildableObject* pBuildable = static_cast<C_FFBuildableObject*>(tr.m_pEnt);
+					pTargetPanel->SetQuantity(CHudCrosshairInfoPanel::HEALTH, iHealth, pBuildable->GetMaxHealth());
+					const bool bFriendlyBuildable = bOwnBuildable
+						|| FFGameRules()->PlayerRelationship(pPlayer, pHitPlayer) == GR_TEAMMATE;
+					if (bFriendlyBuildable && CROSSHAIRTYPE == CROSSHAIRTYPE_DISPENSER)
+					{
+						C_FFDispenser* pDispenser = static_cast<C_FFDispenser*>(pBuildable);
+						pTargetPanel->SetQuantity(CHudCrosshairInfoPanel::AMMO, pDispenser->GetAmmoPercent(), 100);
+						pTargetPanel->SetQuantity(CHudCrosshairInfoPanel::ARMOR, iArmor, iArmor + pDispenser->NeedsArmor());
+						pTargetPanel->SetQuantity(CHudCrosshairInfoPanel::CELLS, iCells, iCells + pDispenser->NeedsCells());
+						pTargetPanel->SetQuantity(CHudCrosshairInfoPanel::ROCKETS, iRockets, iRockets + pDispenser->NeedsRockets());
+						pTargetPanel->SetQuantity(CHudCrosshairInfoPanel::NAILS, iNails, iNails + pDispenser->NeedsNails());
+						pTargetPanel->SetQuantity(CHudCrosshairInfoPanel::SHELLS, iShells, iShells + pDispenser->NeedsShells());
+					}
+					else if (bFriendlyBuildable && CROSSHAIRTYPE == CROSSHAIRTYPE_SENTRYGUN)
+					{
+						C_FFSentryGun* pSentryGun = static_cast<C_FFSentryGun*>(pBuildable);
+						pTargetPanel->SetQuantity(CHudCrosshairInfoPanel::LEVEL, iLevel, 3);
+						pTargetPanel->SetQuantity(CHudCrosshairInfoPanel::SHELLS, iShells, pSentryGun->GetMaxShells());
+						pTargetPanel->SetQuantity(CHudCrosshairInfoPanel::ROCKETS, iRockets, pSentryGun->GetMaxRockets());
+					}
 				}
 				else
-					V_snwprintf( m_pText, 255, L"(%ls) %ls", wszClass, wszName );
-
-				if( hud_centerid.GetInt() )
 				{
-					// Get the screen width/height
-					int iScreenWide, iScreenTall;
-					GetHudSize( iScreenWide, iScreenTall );
+					int iMaxHealth = pHitPlayer->GetMaxHealth();
+					int iMaxArmor = pHitPlayer->GetMaxArmor();
+					// Use the displayed class for enemy disguises, not the real spy class.
+					if (bTheySpy && pHitPlayer->IsDisguised()
+						&& FFGameRules()->PlayerRelationship(pPlayer, pHitPlayer) != GR_TEAMMATE)
+					{
+						PLAYERCLASS_FILE_INFO_HANDLE hClassInfo;
+						if (ReadPlayerClassDataFromFileForSlot(
+							filesystem,
+							Class_IntToString(m_iClass),
+							&hClassInfo,
+							g_pGameRules->GetEncryptionKey()))
+						{
+							const CFFPlayerClassInfo* pClassInfo = GetFilePlayerClassInfoFromHandle(hClassInfo);
+							if (pClassInfo)
+							{
+								iMaxHealth = pClassInfo->m_iHealth;
+								iMaxArmor = pClassInfo->m_iMaxArmour;
+							}
+						}
+					}
 
-					int iWide = UTIL_ComputeStringWidth( m_hTextFont, m_pText );
-					int iTall = surface()->GetFontTall( m_hTextFont );
-					int yOffset = 75; // 75 to get it below the crosshair and not right on it
-
-					// Adjust values to get below the crosshair and offset correctly
-					m_flXOffset = ( float )( iScreenWide / 2 ) - ( iWide / 2 );
-					m_flYOffset = ( float )( iScreenTall / 2 ) + ( iTall / 2 ) + yOffset;
+					pTargetPanel->SetQuantity(CHudCrosshairInfoPanel::HEALTH, iHealth, iMaxHealth);
+					pTargetPanel->SetQuantity(CHudCrosshairInfoPanel::ARMOR, iArmor, iMaxArmor);
 				}
 
+				pTargetPanel->UpdateQuantityVisibility();
+
 				// Start drawing
-				m_flDrawTime = gpGlobals->curtime;
+				pTargetPanel->m_flDrawTime = gpGlobals->curtime;
 			}
 			else
 			{
@@ -626,29 +1031,5 @@ void CHudCrosshairInfo::OnTick( void )
 			// Didn't hit anything!
 			pPlayer->m_hCrosshairInfo.Set( "", 0, 0 );
 		}
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Draw stuff
-//-----------------------------------------------------------------------------
-void CHudCrosshairInfo::Paint( void )
-{
-	if( ( m_flDrawTime + m_flDrawDuration ) > gpGlobals->curtime )
-	{
-		// draw xhair info
-		if( hud_centerid.GetInt() )
-			surface()->DrawSetTextPos( m_flXOffset, m_flYOffset );
-		else
-			surface()->DrawSetTextPos( text1_xpos, text1_ypos );
-
-		// Bug #0000686: defrag wants team colored hud_crosshair names
-		surface()->DrawSetTextFont( m_hTextFont );
-		Color cColor;
-		SetColorByTeam( m_iTeam, cColor );		
-		surface()->DrawSetTextColor( cColor.r(), cColor.g(), cColor.b(), 255 );
-
-		for( wchar_t *wch = m_pText; *wch != 0; wch++ )
-			surface()->DrawUnicodeChar( *wch );
 	}
 }
