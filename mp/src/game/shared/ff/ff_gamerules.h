@@ -105,7 +105,9 @@ class CFFGameRules : public CTeamplayRules
 public:
 	DECLARE_CLASS( CFFGameRules, CTeamplayRules );
 
+	// Symmetric rules for entity contacts; trace filters use the directional entry point.
 	virtual bool	ShouldCollide( int collisionGroup0, int collisionGroup1 );
+	bool ShouldCollideForTrace( int traceCollisionGroup, int targetCollisionGroup );
 
 	virtual int		PlayerRelationship(CBaseEntity *pPlayer, CBaseEntity *pTarget);
 
