@@ -26,7 +26,7 @@ private:
 	std::wstring m_wsNeedAmmo;
 	std::wstring m_wsNotDeployed;
 
-	bool m_bShowPanel = false;
+	int m_iShowPanel = 1;
 	bool m_bHasPipeLauncher = false;
 
 	virtual void ApplySchemeSettings(

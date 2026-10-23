@@ -63,11 +63,20 @@ void CHudResourcePipeTrap::ApplySchemeSettings(
 void CHudResourcePipeTrap::AddPanelSpecificOptions(
 	KeyValues* kvPanelSpecificOptions)
 {
-	AddBooleanOption(
+	AddHeading(kvPanelSpecificOptions, "#HudPanel_Heading_General", 0);
+	AddHeading(kvPanelSpecificOptions, "#HudPanel_Heading_QuantityDisplay", 1);
+
+	KeyValues* kvVisibility = new KeyValues("Values");
+	kvVisibility->SetString("0", "#HudPanel_DisplayNever");
+	kvVisibility->SetString("2", "#HudPanel_DisplayIfDeployed");
+	kvVisibility->SetString("1", "#HudPanel_DisplayAlways");
+
+	AddComboOption(
 		kvPanelSpecificOptions,
 		"ShowPanel",
 		"#HudPanel_Option_ShowPanel",
-		true,
+		kvVisibility,
+		1,
 		0);
 
 	AddBooleanOption(
@@ -96,7 +105,6 @@ KeyValues* CHudResourcePipeTrap::GetDefaultStyleData()
 
 	kvPanelSpecificValues->SetBool("ShowPanel", true);
 	kvPanelSpecificValues->SetBool("HideText", false);
-	kvPanelSpecificValues->SetBool("DisableBuildTimer", false);
 
 	kvPanelSpecificValues->SetInt("ValueDisplay", DISPLAY_MAX);
 
@@ -137,7 +145,7 @@ void CHudResourcePipeTrap::ApplyStyleData(
 
 	if (iShowPanel != -1)
 	{
-		m_bShowPanel = (iShowPanel == 1);
+		m_iShowPanel = clamp(iShowPanel, 0, 2);
 	}
 
 	if (iHideText != -1)
@@ -247,7 +255,7 @@ void CHudResourcePipeTrap::ApplyDisplayOptions()
 {
 	if (IsInPreviewMode())
 	{
-		SetHiddenBits(m_bShowPanel ? 0 : HIDEHUD_ALWAYS);
+		SetHiddenBits(m_iShowPanel != 0 ? 0 : HIDEHUD_ALWAYS);
 		SetText(m_wsDeployed);
 		EnableItem(m_qiPipeLaid);
 		ShowItem(m_qiPipeLaid);
@@ -266,7 +274,9 @@ void CHudResourcePipeTrap::ApplyDisplayOptions()
 		HideItem(m_qiPipeLaid);
 	}
 
-	if (m_bShowPanel && (m_bHasPipeLauncher || m_iNumPipes > 0))
+	if (m_iShowPanel != 0
+		&& (m_iShowPanel != 2 || m_iNumPipes > 0)
+		&& (m_bHasPipeLauncher || m_iNumPipes > 0))
 	{
 		SetHiddenBits(DEFAULT_HIDDEN_BITS);
 	}
