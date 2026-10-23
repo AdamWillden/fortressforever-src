@@ -74,6 +74,13 @@ void CHudTimerCloak::AddPanelSpecificOptions(KeyValues* kvPanelSpecificOptions)
 		static_cast<int>(CooldownVisibility::ALWAYS),
 		0);
 
+	AddBooleanOption(
+		kvPanelSpecificOptions,
+		"HideText",
+		"#HudPanel_Option_HideText",
+		false,
+		0);
+
 	KeyValues* kvMode = new KeyValues("Values");
 	kvMode->SetString("0", "#HudPanel_Option_CountUp");
 	kvMode->SetString("1", "#HudPanel_Option_CountDown");
@@ -94,6 +101,7 @@ KeyValues* CHudTimerCloak::GetDefaultStyleData()
 	kvPanelSpecificValues->SetInt("Show", static_cast<int>(CooldownVisibility::ALWAYS));
 	kvPanelSpecificValues->SetInt("ShowProgress", static_cast<int>(CooldownVisibility::ALWAYS));
 	kvPanelSpecificValues->SetBool("CountDown", false);
+	kvPanelSpecificValues->SetBool("HideText", false);
 	kvPreset->AddSubKey(kvPanelSpecificValues);
 
 	return kvPreset;
@@ -117,6 +125,10 @@ void CHudTimerCloak::ApplyStyleData(
 	int iShow = GetInt("Show", kvPanelSpecificValues, kvDefaultPanelSpecificValues);
 	if (iShow != -1)
 		m_show = static_cast<CooldownVisibility>(iShow);
+
+	int iHideText = GetInt("HideText", kvPanelSpecificValues, kvDefaultPanelSpecificValues);
+	if (iHideText != -1)
+		SetUseToggleText(iHideText == 0);
 
 	int iCountDown = GetInt("CountDown", kvPanelSpecificValues, kvDefaultPanelSpecificValues);
 	if (iCountDown != -1)
