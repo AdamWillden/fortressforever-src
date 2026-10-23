@@ -19,6 +19,8 @@ private:
 	vgui::FFQuantityItem* m_qiRockets;
 
 	bool m_bHideLevel;
+	bool m_bHideShells = false;
+	bool m_bHideRockets = false;
 
 	void AddPanelSpecificOptions(
 		KeyValues* kvPanelSpecificOptions) override;

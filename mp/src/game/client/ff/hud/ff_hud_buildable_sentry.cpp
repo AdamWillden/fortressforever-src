@@ -39,6 +39,20 @@ void CHudBuildableSentry::AddPanelSpecificOptions(
 		false,
 		0);
 
+	AddBooleanOption(
+		kvPanelSpecificOptions,
+		"HideShells",
+		"#HudPanel_Option_HideShells",
+		false,
+		0);
+
+	AddBooleanOption(
+		kvPanelSpecificOptions,
+		"HideRockets",
+		"#HudPanel_Option_HideRockets",
+		false,
+		0);
+
 	AddComboOption(
 		kvPanelSpecificOptions,
 		"LevelDisplay",
@@ -78,8 +92,12 @@ KeyValues* CHudBuildableSentry::GetDefaultStyleData()
 		= kvPreset->FindKey("PanelSpecificValues");
 
 	kvPanelSpecificValues->SetBool("HideLevel", false);
+	kvPanelSpecificValues->SetBool("HideShells", false);
+	kvPanelSpecificValues->SetBool("HideRockets", false);
 
 	kvPanelSpecificValues->SetInt("LevelDisplay", DISPLAY_MAX);
+	kvPanelSpecificValues->SetInt("ShellsDisplay", DISPLAY_MAX);
+	kvPanelSpecificValues->SetInt("RocketsDisplay", DISPLAY_MAX);
 
 	return kvPreset;
 }
@@ -132,17 +150,24 @@ void CHudBuildableSentry::ApplyStyleData(
 			rocketsDisplay.value());
 	}
 
+	int iHideShells = GetInt("HideShells", kvPanelSpecificValues, kvDefaultPanelSpecificValues);
+	if (iHideShells != -1)
+		m_bHideShells = iHideShells == 1;
+
+	int iHideRockets = GetInt("HideRockets", kvPanelSpecificValues, kvDefaultPanelSpecificValues);
+	if (iHideRockets != -1)
+		m_bHideRockets = iHideRockets == 1;
+
 	int iHideLevel
 		= GetInt(
 			"HideLevel",
 			kvPanelSpecificValues,
 			kvDefaultPanelSpecificValues);
 
-	if (iHideLevel != -1
-		&& Change(m_bHideLevel, iHideLevel == 1))
-	{
-		ApplyDisplayOptions();
-	}
+	if (iHideLevel != -1)
+		m_bHideLevel = iHideLevel == 1;
+
+	ApplyDisplayOptions();
 }
 
 void CHudBuildableSentry::Init()
@@ -192,8 +217,7 @@ void CHudBuildableSentry::VidInit()
 
 	m_qiLevel->SetAmount(0);
 
-	DisableItem(m_qiShells);
-	DisableItem(m_qiRockets);
+	ApplyDisplayOptions();
 }
 
 int CHudBuildableSentry::GetMaxCells()
@@ -226,20 +250,7 @@ void CHudBuildableSentry::OnBuiltChanged(
 {
 	CHudBuildable::OnBuiltChanged(bBuilt);
 
-	if (bBuilt)
-	{
-		EnableItem(m_qiShells);
-		if (m_qiLevel->GetAmountAsInt() == 3)
-			EnableItem(m_qiRockets);
-		else
-			DisableItem(m_qiRockets);
-	}
-	else
-	{
-		DisableItem(m_qiShells);
-		DisableItem(m_qiRockets);
-		DisableItem(m_qiLevel);
-	}
+	ApplyDisplayOptions();
 }
 
 void CHudBuildableSentry::MsgFunc_SentryLevelMsg(
@@ -270,12 +281,6 @@ void CHudBuildableSentry::MsgFunc_SentryLevelMsg(
 
 		m_qiRockets->SetAmountMax(iMaxRockets);
 		m_qiRockets->SetAmount(iRockets);
-
-		EnableItem(m_qiRockets);
-	}
-	else
-	{
-		DisableItem(m_qiRockets);
 	}
 
 	if (m_qiLevel->GetAmountAsInt() == iLevel)
@@ -358,21 +363,27 @@ void CHudBuildableSentry::ApplyDisplayOptions()
 {
 	CHudBuildable::ApplyDisplayOptions();
 
-	bool bShowCells
-		= m_bBuilt
-		&& m_qiLevel->GetAmountAsInt() == 3;
+	const bool bPreview = IsInPreviewMode();
+	const bool bBuilt = bPreview || m_bBuilt;
+	const int iLevel = bPreview ? 3 : m_qiLevel->GetAmountAsInt();
 
-	if (bShowCells)
+	SetHeaderIconChar('1' + clamp(iLevel, 1, 3) - 1);
+
+	if (bBuilt && iLevel == 3)
 		DisableItem(m_qiCells);
 
-
-	bool bShowLevel
-		= !m_bHideLevel
-		&& m_bBuilt
-		&& m_qiLevel->GetAmountAsInt() < 3;
-
-	if (bShowLevel)
+	if (bBuilt && !m_bHideLevel && (bPreview || iLevel < 3))
 		EnableItem(m_qiLevel);
 	else
 		DisableItem(m_qiLevel);
+
+	if (bBuilt && !m_bHideShells)
+		EnableItem(m_qiShells);
+	else
+		DisableItem(m_qiShells);
+
+	if (bBuilt && iLevel == 3 && !m_bHideRockets)
+		EnableItem(m_qiRockets);
+	else
+		DisableItem(m_qiRockets);
 }
