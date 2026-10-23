@@ -94,6 +94,7 @@ CHudCrosshairInfoPanel::CHudCrosshairInfoPanel(const char* pElementName, int iTa
 void CHudCrosshairInfoPanel::Init()
 {
 	ivgui()->AddTickSignal(GetVPanel(), 100);
+
 	const char* names[QUANTITY_COUNT] = {
 		"Health", "Ammo", "Armor", "Cells", "Rockets", "Nails", "Shells", "Level"
 	};
@@ -101,6 +102,8 @@ void CHudCrosshairInfoPanel::Init()
 		"#FF_ITEM_HEALTH", "#FF_ITEM_AMMO", "#FF_ITEM_ARMOR", "#FF_ITEM_CELLS",
 		"#FF_ITEM_ROCKETS", "#FF_ITEM_NAILS", "#FF_ITEM_SHELLS", "#FF_ITEM_LEVEL"
 	};
+	const char icons[QUANTITY_COUNT] = { 'a', 'r', 's', 'p', 'i', 0, 'r', 'd' };
+
 	for (int i = 0; i < QUANTITY_COUNT; ++i)
 	{
 		const bool bSupported = i == HEALTH
@@ -113,6 +116,10 @@ void CHudCrosshairInfoPanel::Init()
 
 		m_items[i] = AddItem(names[i]);
 		m_items[i]->SetLabel(labels[i]);
+
+		if (icons[i])
+			m_items[i]->SetIcon(icons[i]);
+
 		m_items[i]->SetAmountDisplay(DISPLAY_MAX);
 		DisableItem(m_items[i]);
 	}
@@ -177,6 +184,9 @@ void CHudCrosshairInfoPanel::Reset()
 
 void CHudCrosshairInfoPanel::SetQuantity(Quantity quantity, int iValue, int iMaximum)
 {
+	if (quantity == LEVEL && iValue >= 1 && iValue <= 3)
+		SetHeaderIconChar('1' + iValue - 1);
+
 	m_values[quantity] = iValue;
 	m_maximums[quantity] = iMaximum;
 	if (m_items[quantity] && iValue >= 0 && iMaximum > 0)
@@ -300,12 +310,25 @@ void CHudCrosshairInfoPanel::ShowPreview()
 
 void CHudCrosshairInfoPanel::AddPanelSpecificOptions(KeyValues* kvPanelSpecificOptions)
 {
+	AddHeading(kvPanelSpecificOptions, "#HudPanel_Heading_General", 0);
+	AddHeading(kvPanelSpecificOptions, "#HudPanel_Heading_QuantityDisplay", 1);
+
 	AddBooleanOption(
 		kvPanelSpecificOptions,
 		"ShowPanel",
 		"#HudPanel_Option_ShowPanel",
 		true,
 		0);
+
+	AddNumericOption(
+		kvPanelSpecificOptions,
+		"DisplayDuration",
+		"#HudPanel_Option_DisplayDuration",
+		2000,
+		500,
+		5000,
+		0);
+
 	if (m_iTargetType != CROSSHAIRTYPE_NORMAL)
 		AddBooleanOption(
 			kvPanelSpecificOptions,
@@ -314,8 +337,7 @@ void CHudCrosshairInfoPanel::AddPanelSpecificOptions(KeyValues* kvPanelSpecificO
 			false,
 			0);
 
-	if (m_iTargetType == CROSSHAIRTYPE_DISPENSER)
-		if (m_items[AMMO])
+	if (m_iTargetType == CROSSHAIRTYPE_DISPENSER && m_items[AMMO])
 		AddBooleanOption(
 			kvPanelSpecificOptions,
 			"HideAmmo",
@@ -405,6 +427,7 @@ KeyValues* CHudCrosshairInfoPanel::GetDefaultStyleData()
 	kvPreset->SetInt("showHeaderIcon", 1);
 	KeyValues* kvPanelSpecificValues = new KeyValues("PanelSpecificValues");
 	kvPanelSpecificValues->SetBool("ShowPanel", true);
+	kvPanelSpecificValues->SetInt("DisplayDuration", 2000);
 	kvPanelSpecificValues->SetBool("HideAmmo", false);
 	kvPanelSpecificValues->SetBool("HideArmor", m_iTargetType == CROSSHAIRTYPE_DISPENSER);
 	if (m_items[CELLS])
@@ -447,6 +470,10 @@ void CHudCrosshairInfoPanel::ApplyStyleData(KeyValues* kvStyleData, KeyValues* k
 	BaseClass::ApplyStyleData(kvStyleData, kvDefaultStyleData);
 	KeyValues* kvValues = kvStyleData->FindKey("PanelSpecificValues", true);
 	KeyValues* kvDefaults = kvDefaultStyleData->FindKey("PanelSpecificValues", true);
+	int iDuration = GetInt("DisplayDuration", kvValues, kvDefaults);
+	if (iDuration != -1)
+		m_flDrawDuration = clamp(iDuration, 500, 5000) / 1000.0f;
+
 	int iShowPanel = GetInt("ShowPanel", kvValues, kvDefaults);
 	if (iShowPanel != -1)
 		m_bShowPanel = iShowPanel == 1;
