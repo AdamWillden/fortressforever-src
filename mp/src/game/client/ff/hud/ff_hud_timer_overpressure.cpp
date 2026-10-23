@@ -78,6 +78,18 @@ void CHudTimerOverpressure::AddPanelSpecificOptions(KeyValues* kvPanelSpecificOp
 		false,
 		0);
 
+	KeyValues* kvMode = new KeyValues("Values");
+	kvMode->SetString("0", "#HudPanel_Option_CountUp");
+	kvMode->SetString("1", "#HudPanel_Option_CountDown");
+
+	AddComboOption(
+		kvPanelSpecificOptions,
+		"CountDown",
+		"#HudPanel_Option_Mode",
+		kvMode,
+		0,
+		1);
+
 	AddComboOption(
 		kvPanelSpecificOptions,
 		"ValueDisplay",
@@ -95,6 +107,7 @@ KeyValues* CHudTimerOverpressure::GetDefaultStyleData()
 	kvPanelSpecificValues->SetInt("Show", static_cast<int>(CooldownVisibility::ALWAYS));
 	kvPanelSpecificValues->SetInt("ShowProgress", static_cast<int>(CooldownVisibility::ALWAYS));
 	kvPanelSpecificValues->SetBool("HideText", false);
+	kvPanelSpecificValues->SetBool("CountDown", false);
 	kvPanelSpecificValues->SetInt("ValueDisplay", DISPLAY_PERCENTAGE);
 	kvPreset->AddSubKey(kvPanelSpecificValues);
 
@@ -124,12 +137,20 @@ void CHudTimerOverpressure::ApplyStyleData(
 	if (iHideText != -1)
 		m_bHideText = iHideText == 1;
 
+	int iCountDown = GetInt("CountDown", kvPanelSpecificValues, kvDefaultPanelSpecificValues);
+	if (iCountDown != -1)
+		m_bCountDown = iCountDown == 1;
+
 	std::optional<AmountDisplay> valueDisplay = GetAmountDisplay(
 		"ValueDisplay",
 		kvPanelSpecificValues,
 		kvDefaultPanelSpecificValues);
 	if (valueDisplay.has_value())
-		m_qiTimer->SetAmountDisplay(valueDisplay.value());
+		m_valueDisplay = valueDisplay.value();
+
+	m_qiTimer->SetAmountDisplay(m_bCountDown ? DISPLAY_RAW : m_valueDisplay);
+	m_qiTimer->SetAmountDecimalPlaces(m_bCountDown ? 1 : 0);
+	m_qiTimer->SetLabel(m_bCountDown ? "#FF_ITEM_TIMELEFT" : "#FF_ITEM_PROGRESS");
 
 	ApplyDisplayOptions();
 }
@@ -171,7 +192,7 @@ void CHudTimerOverpressure::Init()
 
 void CHudTimerOverpressure::VidInit()
 {
-	m_qiTimer->SetAmount(OVERPRESSURE_DELAY);
+	m_qiTimer->SetAmount(m_bCountDown ? 0 : OVERPRESSURE_DELAY);
 	SetText(m_wsReady);
 	ApplyDisplayOptions();
 }
@@ -211,12 +232,12 @@ void CHudTimerOverpressure::Paint()
 		float flTimeLeft = pPlayer->m_flNextClassSpecificSkill - gpGlobals->curtime;
 		if (flTimeLeft > 0)
 		{
-			m_qiTimer->SetAmount(OVERPRESSURE_DELAY - flTimeLeft);
+			m_qiTimer->SetAmount(m_bCountDown ? flTimeLeft : OVERPRESSURE_DELAY - flTimeLeft);
 			SetText(m_wsRegenerating);
 		}
 		else
 		{
-			m_qiTimer->SetAmount(OVERPRESSURE_DELAY);
+			m_qiTimer->SetAmount(m_bCountDown ? 0 : OVERPRESSURE_DELAY);
 			SetText(m_wsReady);
 		}
 	}

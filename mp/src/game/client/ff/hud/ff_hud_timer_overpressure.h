@@ -20,6 +20,8 @@ private:
 	CooldownVisibility m_show = CooldownVisibility::ALWAYS;
 	CooldownVisibility m_showProgress = CooldownVisibility::ALWAYS;
 	bool m_bHideText = false;
+	bool m_bCountDown = false;
+	AmountDisplay m_valueDisplay = DISPLAY_PERCENTAGE;
 	std::wstring m_wsReady = L"Ready";
 	std::wstring m_wsRegenerating = L"Regenerating...";
 
