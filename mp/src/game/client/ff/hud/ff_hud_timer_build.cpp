@@ -32,6 +32,9 @@ CHudTimerBuild::~CHudTimerBuild()
 void CHudTimerBuild::AddPanelSpecificOptions(
 	KeyValues* kvPanelSpecificOptions)
 {
+	AddHeading(kvPanelSpecificOptions, "#HudPanel_Heading_General", 0);
+	AddHeading(kvPanelSpecificOptions, "#HudPanel_Heading_QuantityDisplay", 1);
+
 	AddBooleanOption(
 		kvPanelSpecificOptions,
 		"ShowPanel",
@@ -54,7 +57,8 @@ void CHudTimerBuild::AddPanelSpecificOptions(
 		"InvertScale",
 		"#HudPanel_Option_Mode",
 		kvInvertScaleOptions,
-		0);
+		0,
+		1);
 }
 
 KeyValues* CHudTimerBuild::GetDefaultStyleData()
