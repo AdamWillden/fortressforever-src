@@ -30,7 +30,8 @@ private:
 	int m_iWeaponID;
 	const char* m_pszTitle;
 	bool m_bDefaultShowPanel;
-	bool m_bShowPanel;
+	int m_iShowPanel;
+	int m_iShowProgress = 2;
 	vgui::FFQuantityItem* m_pCharge = nullptr;
 	bool GetCharge(float& flCharge);
 };
