@@ -265,6 +265,7 @@ void CHudBuildableDispenser::Init()
 	m_qiCells->SetIntensityAmountScaled(false);
 
 	m_storedItems[0] = AddItem("Armor");
+	m_storedItems[0]->SetIcon('s');
 	m_storedItems[0]->SetLabel("#FF_ITEM_ARMOR");
 	m_storedItems[0]->SetAmountDisplay(DISPLAY_MAX);
 	DisableItem(m_storedItems[0]);
@@ -275,11 +276,13 @@ void CHudBuildableDispenser::Init()
 	DisableItem(m_storedItems[1]);
 
 	m_storedItems[2] = AddItem("Shells");
+	m_storedItems[2]->SetIcon('r');
 	m_storedItems[2]->SetLabel("#FF_ITEM_SHELLS");
 	m_storedItems[2]->SetAmountDisplay(DISPLAY_MAX);
 	DisableItem(m_storedItems[2]);
 
 	m_storedItems[3] = AddItem("Rockets");
+	m_storedItems[3]->SetIcon('i');
 	m_storedItems[3]->SetLabel("#FF_ITEM_ROCKETS");
 	m_storedItems[3]->SetAmountDisplay(DISPLAY_MAX);
 	DisableItem(m_storedItems[3]);
