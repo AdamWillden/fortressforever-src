@@ -51,6 +51,9 @@ void CHudResourceMedpacks::ApplySchemeSettings(
 void CHudResourceMedpacks::AddPanelSpecificOptions(
 	KeyValues* kvPanelSpecificOptions)
 {
+	AddHeading(kvPanelSpecificOptions, "#HudPanel_Heading_General", 0);
+	AddHeading(kvPanelSpecificOptions, "#HudPanel_Heading_QuantityDisplay", 1);
+
 	AddBooleanOption(
 		kvPanelSpecificOptions,
 		"ShowPanel",
@@ -92,7 +95,6 @@ KeyValues* CHudResourceMedpacks::GetDefaultStyleData()
 	kvPanelSpecificValues->SetBool("ShowPanel", true);
 	kvPanelSpecificValues->SetBool("HideWhenFull", false);
 	kvPanelSpecificValues->SetBool("HideText", false);
-	kvPanelSpecificValues->SetBool("DisableBuildTimer", false);
 
 	kvPanelSpecificValues->SetInt("ValueDisplay", DISPLAY_MAX);
 
