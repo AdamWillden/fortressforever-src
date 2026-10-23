@@ -38,11 +38,23 @@ void CHudMiscSpeedometer::ApplySchemeSettings(
 void CHudMiscSpeedometer::AddPanelSpecificOptions(
 	KeyValues* kvPanelSpecificOptions)
 {
+	AddHeading(kvPanelSpecificOptions, "#HudPanel_Heading_General", 0);
+	AddHeading(kvPanelSpecificOptions, "#HudPanel_Heading_QuantityDisplay", 1);
+
 	AddBooleanOption(
 		kvPanelSpecificOptions,
 		"ShowPanel",
 		"#HudPanel_Option_ShowPanel",
 		true,
+		0);
+
+	AddNumericOption(
+		kvPanelSpecificOptions,
+		"AveragePeriod",
+		"#HudPanel_Option_AveragePeriod",
+		1000,
+		100,
+		5000,
 		0);
 
 	KeyValues* kvItems = new KeyValues("Values");
@@ -104,6 +116,7 @@ KeyValues* CHudMiscSpeedometer::GetDefaultStyleData()
 		= new KeyValues("PanelSpecificValues");
 
 	kvPanelSpecificValues->SetBool("ShowPanel", true);
+	kvPanelSpecificValues->SetInt("AveragePeriod", 1000);
 	kvPanelSpecificValues->SetInt("SpeedItems", AVERAGE_ONLY);
 
 	kvPanelSpecificValues->SetInt("InstantaneousSpeedDisplay", DISPLAY_RAW);
@@ -127,6 +140,10 @@ void CHudMiscSpeedometer::ApplyStyleData(
 
 	KeyValues* kvDefaultPanelSpecificValues
 		= kvDefaultStyleData->FindKey("PanelSpecificValues", true);
+
+	int iPeriod = GetInt("AveragePeriod", kvPanelSpecificValues, kvDefaultPanelSpecificValues);
+	if (iPeriod != -1)
+		m_flAveragePeriod = clamp(iPeriod, 100, 5000) / 1000.0f;
 
 	std::optional<AmountDisplay> instantaneousSpeedDisplay
 		= GetAmountDisplay(
@@ -271,7 +288,7 @@ void CHudMiscSpeedometer::OnThink()
 
 	const float dt = 0.1f;     // your m_flNextUpdate step
 	const float p = 0.8f;      // 80% responsiveness
-	const float T = 1.0f;      // within 1 second
+	const float T = m_flAveragePeriod; // Time to reach 80% of a new speed
 	const float alpha          // 0.14866
 		= AlphaForTarget(p, T, dt);
 

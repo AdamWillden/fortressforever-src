@@ -24,6 +24,7 @@ private:
 
     float m_flNextUpdate = 0.0f;
     float m_flAverageSpeed = 0.0f;
+    float m_flAveragePeriod = 1.0f;
 
     // HUD customization options
     bool m_bShowPanel;
