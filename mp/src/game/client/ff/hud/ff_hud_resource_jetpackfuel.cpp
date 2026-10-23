@@ -53,6 +53,9 @@ void CHudResourceJetpackFuel::ApplySchemeSettings(
 void CHudResourceJetpackFuel::AddPanelSpecificOptions(
 	KeyValues* kvPanelSpecificOptions)
 {
+	AddHeading(kvPanelSpecificOptions, "#HudPanel_Heading_General", 0);
+	AddHeading(kvPanelSpecificOptions, "#HudPanel_Heading_QuantityDisplay", 1);
+
 	AddBooleanOption(
 		kvPanelSpecificOptions,
 		"ShowPanel",
