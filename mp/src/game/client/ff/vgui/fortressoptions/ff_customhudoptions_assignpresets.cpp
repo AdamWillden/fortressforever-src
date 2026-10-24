@@ -722,6 +722,7 @@ void CFFCustomHudAssignPresets::ApplyAssignmentToControls(KeyValues* kvAssignmen
 
 			if (Q_stricmp(kvPanelSpecificOption->GetName(), "NumericInput") == 0)
 			{
+				const int iInputWidth = 60; // Four digits plus text-entry padding.
 				int value = kvPanelSpecificOption->GetInt("defaultValue");
 				if (kvPanelSpecificValues)
 					value = kvPanelSpecificValues->GetInt(pszName, value);
@@ -737,13 +738,13 @@ void CFFCustomHudAssignPresets::ApplyAssignmentToControls(KeyValues* kvAssignmen
 				pInput->SetBounds(
 					iGroupWidth * iGroup,
 					iYCoord,
-					iLabelWidth,
+					iInputWidth,
 					iRowHeight);
 				Label* pLabel = new Label(m_pPanelSpecificOptions, pszName, pszText);
 				pLabel->SetBounds(
-					iGroupWidth * iGroup + iLabelWidth + 10,
+					iGroupWidth * iGroup + iInputWidth + 10,
 					iYCoord,
-					iLabelWidth,
+					iGroupWidth - iInputWidth - 15,
 					iRowHeight);
 				continue;
 			}

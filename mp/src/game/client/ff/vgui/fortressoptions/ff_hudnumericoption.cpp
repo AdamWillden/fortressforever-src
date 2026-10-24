@@ -15,9 +15,12 @@ CFFHudNumericOption::CFFHudNumericOption(
 	int maximum)
 	: BaseClass(parent, name), m_pHudPanel(pHudPanel), m_iMinimum(minimum), m_iMaximum(maximum)
 {
+	// Ensure max char count is acceptable
+	Assert(maximum <= 9999);
+	SetMaximumCharCount(4);
+
 	RemoveActionSignalTarget(parent);
 	SetAllowNumericInputOnly(true);
-	SetMaximumCharCount(9);
 	m_iValue = clamp(value, minimum, maximum);
 	SetText(VarArgs("%d", m_iValue));
 	m_pTarget = target;
