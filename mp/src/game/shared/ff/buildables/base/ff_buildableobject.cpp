@@ -77,10 +77,10 @@ bool CFFBuildableObject::CanPlayerExit( CBaseEntity *pPlayer ) const
 	if (slot < 0 || slot >= MAX_PLAYERS || m_hExitingPlayers[slot].Get() != pPlayer)
 		return false;
 
-	const Vector playerMins = pPlayer->GetAbsOrigin() + pPlayer->WorldAlignMins();
-	const Vector playerMaxs = pPlayer->GetAbsOrigin() + pPlayer->WorldAlignMaxs();
-	const Vector buildMins = GetAbsOrigin() + WorldAlignMins();
-	const Vector buildMaxs = GetAbsOrigin() + WorldAlignMaxs();
+	Vector playerMins, playerMaxs;
+	pPlayer->CollisionProp()->WorldSpaceAABB(&playerMins, &playerMaxs);
+	Vector buildMins, buildMaxs;
+	CollisionProp()->WorldSpaceAABB(&buildMins, &buildMaxs);
 	for (int axis = 0; axis < 3; ++axis)
 	{
 		if (playerMaxs[axis] <= buildMins[axis] || playerMins[axis] >= buildMaxs[axis])
@@ -602,8 +602,9 @@ void CFFBuildableObject::GoLive( void )
 #if !defined( CLIENT_DLL )
 	if (Classify() != CLASS_MANCANNON)
 	{
-		Vector vecMins = GetAbsOrigin() + WorldAlignMins();
-		Vector vecMaxs = GetAbsOrigin() + WorldAlignMaxs();
+		// Physics buildables such as detpacks can have rotated entity-space bounds.
+		Vector vecMins, vecMaxs;
+		CollisionProp()->WorldSpaceAABB(&vecMins, &vecMaxs);
 		CBaseEntity* pList[MAX_PLAYERS];
 		int iCount = UTIL_EntitiesInBox(pList, MAX_PLAYERS, vecMins, vecMaxs, FL_CLIENT);
 		for (int i = 0; i < iCount; i++)
