@@ -50,7 +50,7 @@ CHudResourceWeaponCharge::CHudResourceWeaponCharge(
 	bool bShowPanel)
 	: CHudElement(pElementName), BaseClass(NULL, pElementName),
 	m_iWeaponID(iWeaponID), m_pszTitle(pszTitle),
-	m_bDefaultShowPanel(bShowPanel), m_iShowPanel(bShowPanel ? 1 : 0)
+	m_bDefaultShowPanel(bShowPanel), m_showPanel(bShowPanel ? WHEN_ACTIVE : NEVER)
 {
 	SetParent(g_pClientMode->GetViewport());
 	SetHiddenBits(DEFAULT_HIDDEN_BITS);
@@ -110,7 +110,7 @@ void CHudResourceWeaponCharge::AddPanelSpecificOptions(KeyValues* kvOptions)
 		"ShowPanel",
 		"#HudPanel_Option_ShowPanel",
 		kvVisibility,
-		m_bDefaultShowPanel ? 1 : 0,
+		m_bDefaultShowPanel ? WHEN_ACTIVE : NEVER,
 		0);
 
 	if (m_iWeaponID == FF_WEAPON_ASSAULTCANNON)
@@ -125,7 +125,7 @@ void CHudResourceWeaponCharge::AddPanelSpecificOptions(KeyValues* kvOptions)
 			"ShowProgress",
 			"#HudPanel_Option_ShowProgress",
 			kvProgress,
-			2,
+			PROGRESS_ALWAYS,
 			0);
 	}
 
@@ -181,7 +181,7 @@ KeyValues* CHudResourceWeaponCharge::GetDefaultStyleData()
 	kvValues->SetBool("ShowPanel", m_bDefaultShowPanel);
 	kvValues->SetInt("ValueDisplay", DISPLAY_PERCENTAGE);
 	if (m_iWeaponID == FF_WEAPON_ASSAULTCANNON)
-		kvValues->SetInt("ShowProgress", 2);
+		kvValues->SetInt("ShowProgress", PROGRESS_ALWAYS);
 
 	kvPreset->AddSubKey(kvValues);
 	return kvPreset;
@@ -194,18 +194,18 @@ void CHudResourceWeaponCharge::ApplyStyleData(KeyValues* kvStyleData, KeyValues*
 	KeyValues* kvDefaultValues = kvDefaults->FindKey("PanelSpecificValues", true);
 	int iShowPanel = GetInt("ShowPanel", kvValues, kvDefaultValues);
 	if (iShowPanel != -1)
-		m_iShowPanel = clamp(iShowPanel, 0, 2);
+		m_showPanel = static_cast<PanelVisibility>(clamp(iShowPanel, int(NEVER), int(WHILE_EQUIPPED)));
 
 	int iShowProgress = GetInt("ShowProgress", kvValues, kvDefaultValues);
 	if (iShowProgress != -1)
-		m_iShowProgress = clamp(iShowProgress, 0, 2);
+		m_showProgress = static_cast<ProgressVisibility>(clamp(iShowProgress, int(PROGRESS_NEVER), int(PROGRESS_ALWAYS)));
 
 	std::optional<AmountDisplay> display = GetAmountDisplay("ValueDisplay", kvValues, kvDefaultValues);
 	if (display.has_value())
 		m_pCharge->SetAmountDisplay(display.value());
 }
 
-bool CHudResourceWeaponCharge::GetCharge(float& flCharge, char& cIcon)
+bool CHudResourceWeaponCharge::IsAvailable()
 {
 	C_FFPlayer* pPlayer = C_FFPlayer::GetLocalFFPlayer();
 	if (!pPlayer || FF_IsPlayerSpec(pPlayer) || !FF_HasPlayerPickedClass(pPlayer))
@@ -215,77 +215,102 @@ bool CHudResourceWeaponCharge::GetCharge(float& flCharge, char& cIcon)
 	if (!pWeapon || pWeapon->GetWeaponID() != m_iWeaponID)
 		return false;
 
+	return true;
+}
+
+CHudResourceWeaponCharge::ChargeData CHudResourceWeaponCharge::GetChargeData()
+{
+	CFFWeaponBase* pWeapon
+		= C_FFPlayer::GetLocalFFPlayer()
+		->GetActiveFFWeapon();
+
+	float flCharge = 0, flChargeMax = 0;
+	char cIcon = '?';
+
 	switch (m_iWeaponID)
 	{
 	case FF_WEAPON_SNIPERRIFLE:
 	{
-		cIcon = 's';
 		CFFWeaponSniperRifle* pRifle = static_cast<CFFWeaponSniperRifle*>(pWeapon);
+
+		// Charge starts at the rifle's minimum damage while the shot is held.
 		if (!pRifle->IsInFire())
 		{
 			flCharge = 0.0f;
-			break;
 		}
-
-		flCharge = clamp(gpGlobals->curtime - pRifle->GetFireStartTime(), 1.0f, FF_SNIPER_MAXCHARGE) / FF_SNIPER_MAXCHARGE;
+		else
+		{
+			flCharge = clamp(gpGlobals->curtime - pRifle->GetFireStartTime(), 1.0f, FF_SNIPER_MAXCHARGE);
+		}
+		flChargeMax = FF_SNIPER_MAXCHARGE;
+		cIcon = 's';
 		break;
 	}
 
 	case FF_WEAPON_ASSAULTCANNON:
+	{
+		flCharge = static_cast<CFFWeaponAssaultCannon*>(pWeapon)->m_flChargeTime;
+		flChargeMax = FF_AC_WINDUPTIME;
 		cIcon = 'b';
-		flCharge = static_cast<CFFWeaponAssaultCannon*>(pWeapon)->m_flChargeTime / FF_AC_WINDUPTIME;
 		break;
-	case FF_WEAPON_JUMPGUN:
-		cIcon = 'j';
-		flCharge = static_cast<CFFWeaponJumpgun*>(pWeapon)->GetClampedCharge() / JUMPGUN_CHARGEUPTIME;
-		break;
-	default:
-		return false;
 	}
 
-	flCharge = clamp(flCharge, 0.0f, 1.0f);
-	return true;
-}
+	case FF_WEAPON_JUMPGUN:
+	{
+		cIcon = 'j';
+		flCharge = static_cast<CFFWeaponJumpgun*>(pWeapon)->GetClampedCharge();
+		flChargeMax = JUMPGUN_CHARGEUPTIME;
+		break;
+	}
+	}
 
-bool CHudResourceWeaponCharge::ShouldDraw()
-{
-	if (m_iShowPanel == 0 || !CHudElement::ShouldDraw())
-		return false;
+	flCharge = clamp(flCharge, 0.0f, flChargeMax);
 
-	if (IsInPreviewMode())
-		return true;
-
-	float flCharge;
-	char cIcon;
-	if (!engine->IsInGame() || !GetCharge(flCharge, cIcon))
-		return false;
-
-	C_FFPlayer* pPlayer = C_FFPlayer::GetLocalFFPlayer();
-	return m_iShowPanel == 2 || flCharge > 0.0f
-		|| (m_iWeaponID == FF_WEAPON_ASSAULTCANNON && pPlayer->m_bAssaultCannonAnchored);
+	return {
+		flCharge,
+		flChargeMax,
+		cIcon
+	};
 }
 
 void CHudResourceWeaponCharge::OnTick()
 {
-	BaseClass::OnTick();
+	const bool bPreview = IsInPreviewMode();
+	const bool bAvailable = engine->IsInGame() && IsAvailable();
+	C_FFPlayer* pPlayer = C_FFPlayer::GetLocalFFPlayer();
+	const bool bAnchored = m_iWeaponID == FF_WEAPON_ASSAULTCANNON
+		&& pPlayer && pPlayer->m_bAssaultCannonAnchored;
+
+	ChargeData charge;
+	if (bAvailable)
+		charge = GetChargeData();
+	else if (bPreview)
+	{
+		charge.m_flCharge = 0.6f;
+		charge.m_cIcon = m_iWeaponID == FF_WEAPON_JUMPGUN ? 'j'
+			: m_iWeaponID == FF_WEAPON_ASSAULTCANNON ? 'b' : 's';
+	}
+
+	const bool bActive = charge.m_flCharge > 0.0f || bAnchored;
+	const bool bShow = m_showPanel != NEVER
+		&& (bPreview || (bAvailable && (m_showPanel == WHILE_EQUIPPED || bActive)));
+	SetHiddenBits(bShow ? (bPreview ? 0 : DEFAULT_HIDDEN_BITS) : HIDEHUD_ALWAYS);
 
 	if (m_iWeaponID == FF_WEAPON_ASSAULTCANNON)
+		SetToggleTextVisible(bPreview || bAnchored);
+
+	if (bAvailable || bPreview)
 	{
-		C_FFPlayer* pPlayer = C_FFPlayer::GetLocalFFPlayer();
-		SetToggleTextVisible(IsInPreviewMode() || (pPlayer && pPlayer->m_bAssaultCannonAnchored));
+		m_pCharge->SetAmountMax(charge.m_flChargeMax);
+		m_pCharge->SetAmount(charge.m_flCharge);
+		m_pCharge->SetIcon(charge.m_cIcon);
 	}
 
-	float flCharge = 0.6f;
-	char cIcon = 'b';
-	if (IsInPreviewMode() || (engine->IsInGame() && GetCharge(flCharge, cIcon)))
-	{
-		m_pCharge->SetAmount(flCharge * 100);
-		m_pCharge->SetIcon(cIcon);
-	}
-
-	if (m_iShowProgress == 2
-		|| (m_iShowProgress == 1 && (IsInPreviewMode() || flCharge > 0.0f)))
+	if (m_showProgress == PROGRESS_ALWAYS
+		|| (m_showProgress == PROGRESS_WHEN_ACTIVE && (bPreview || charge.m_flCharge > 0.0f)))
 		EnableItem(m_pCharge);
 	else
 		DisableItem(m_pCharge);
+
+	BaseClass::OnTick();
 }
