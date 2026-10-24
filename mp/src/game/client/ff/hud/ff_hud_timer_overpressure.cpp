@@ -15,7 +15,7 @@ CHudTimerOverpressure::CHudTimerOverpressure(const char* pElementName)
 	SetParent(g_pClientMode->GetViewport());
 	SetHiddenBits(DEFAULT_HIDDEN_BITS);
 	SetHeaderText(L"Overpressure");
-	SetHeaderIconChar('f');
+	SetHeaderIconChar('g');
 	SetUseToggleText(true);
 	SetText(m_wsReady);
 
@@ -179,7 +179,7 @@ void CHudTimerOverpressure::Init()
 
 	m_qiTimer = AddItem("Cooldown");
 	m_qiTimer->SetLabel("#FF_ITEM_PROGRESS");
-	m_qiTimer->SetIcon('f');
+	m_qiTimer->SetIcon('k');
 	m_qiTimer->SetAmountMax(OVERPRESSURE_DELAY);
 	m_qiTimer->SetAmountDisplay(DISPLAY_PERCENTAGE);
 
