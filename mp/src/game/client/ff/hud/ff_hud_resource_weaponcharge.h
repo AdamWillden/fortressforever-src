@@ -8,13 +8,6 @@
 class CHudResourceWeaponCharge : public CHudElement, public vgui::FFQuantityPanel
 {
 private:
-	struct ChargeData
-	{
-		float m_flCharge = 0.0f;
-		float m_flChargeMax = 1.0f;
-		char m_cIcon = '?';
-	};
-
 	DECLARE_CLASS_SIMPLE(CHudResourceWeaponCharge, vgui::FFQuantityPanel);
 
 public:
@@ -32,22 +25,23 @@ protected:
 	void AddPanelSpecificOptions(KeyValues* kvOptions) override;
 	KeyValues* GetDefaultStyleData() override;
 	void ApplyStyleData(KeyValues* kvStyleData, KeyValues* kvDefaults) override;
-	void OnTick() override;
 
 private:
 	int m_iWeaponID;
 	const char* m_pszTitle;
 	bool m_bDefaultShowPanel;
-	enum PanelVisibility { NEVER = 0, WHEN_ACTIVE = 1, WHILE_EQUIPPED = 2 };
-	enum ProgressVisibility { PROGRESS_NEVER = 0, PROGRESS_WHEN_ACTIVE = 1, PROGRESS_ALWAYS = 2 };
+	enum PanelVisibility {
+		NEVER = 0,
+		WHEN_ACTIVE = 1,
+		WHILE_EQUIPPED = 2
+	};
 
 	PanelVisibility m_showPanel;
-	ProgressVisibility m_showProgress = PROGRESS_ALWAYS;
 	vgui::FFQuantityItem* m_pCharge = nullptr;
 
 	void UpdateCharge();
-	bool IsAvailable();
-	ChargeData GetChargeData();
+	bool IsEquipped();
+	float GetCharge();
 };
 
 class CHudResourceSniperCharge : public CHudResourceWeaponCharge

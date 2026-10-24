@@ -49,25 +49,50 @@ CHudResourceWeaponCharge::CHudResourceWeaponCharge(
 	const char* pszTitle,
 	bool bShowPanel)
 	: CHudElement(pElementName), BaseClass(NULL, pElementName),
-	m_iWeaponID(iWeaponID), m_pszTitle(pszTitle),
-	m_bDefaultShowPanel(bShowPanel), m_showPanel(bShowPanel ? WHEN_ACTIVE : NEVER)
+	m_iWeaponID(iWeaponID),
+	m_pszTitle(pszTitle),
+	m_bDefaultShowPanel(bShowPanel),
+	m_showPanel(bShowPanel ? WHEN_ACTIVE : NEVER)
 {
 	SetParent(g_pClientMode->GetViewport());
-	SetHiddenBits(DEFAULT_HIDDEN_BITS);
 
-	if (m_iWeaponID == FF_WEAPON_ASSAULTCANNON)
-		SetUseToggleText(true);
+	SetHiddenBits(DEFAULT_HIDDEN_BITS);
 }
 
 void CHudResourceWeaponCharge::Init()
 {
+	ivgui()->AddTickSignal(GetVPanel(), 250);
+
+	const char* szLabel
+		= m_iWeaponID == FF_WEAPON_ASSAULTCANNON
+			? "#HudPanel_WindUp"
+			: "#HudPanel_Charge";
+
 	m_pCharge = AddItem("Charge");
-	m_pCharge->SetLabel(m_iWeaponID == FF_WEAPON_ASSAULTCANNON
-		? "#HudPanel_WindUp" : "#HudPanel_Charge");
+	m_pCharge->SetLabel(szLabel);
 	m_pCharge->SetIcon('f');
-	m_pCharge->SetAmountMax(100);
 	m_pCharge->SetAmountDisplay(DISPLAY_PERCENTAGE);
-	ivgui()->AddTickSignal(GetVPanel(), 16);
+
+	switch (m_iWeaponID)
+	{
+	case FF_WEAPON_SNIPERRIFLE:
+		m_pCharge->SetAmountMax(FF_SNIPER_MAXCHARGE);
+		m_pCharge->SetIcon('s');
+		break;
+	}
+
+	case FF_WEAPON_ASSAULTCANNON:
+		m_pCharge->SetAmountMax(FF_AC_WINDUPTIME);
+		m_pCharge->SetIcon('b');
+		break;
+
+	case FF_WEAPON_JUMPGUN:
+		m_pCharge->SetAmountMax(JUMPGUN_CHARGEUPTIME);
+		m_pCharge->SetIcon('j');
+		break;
+	}
+
+
 	AddPanelToHudOptions(
 		FFQuantityPanel::GetName(),
 		m_pszTitle,
@@ -78,24 +103,35 @@ void CHudResourceWeaponCharge::Init()
 void CHudResourceWeaponCharge::VidInit()
 {
 	m_pCharge->SetAmount(0);
+
+
 }
 
-void CHudResourceWeaponCharge::ApplySchemeSettings(IScheme* pScheme)
+void CHudResourceWeaponCharge::ApplySchemeSettings(
+	IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
-	wchar_t* pszTitle = g_pVGuiLocalize->Find(m_pszTitle);
+
+	const wchar_t* pszTitle
+		= g_pVGuiLocalize->Find(m_pszTitle);
+
 	if (pszTitle)
 		SetHeaderText(pszTitle);
 
-	if (m_iWeaponID == FF_WEAPON_ASSAULTCANNON)
-	{
-		wchar_t* pszAnchored = g_pVGuiLocalize->Find("#HudPanel_Anchored");
-		if (pszAnchored)
-			SetText(pszAnchored);
-	}
+	if (m_iWeaponID != FF_WEAPON_ASSAULTCANNON)
+		return;
+
+	wchar_t* pszAnchored
+		= g_pVGuiLocalize->Find("#HudPanel_Anchored");
+
+	if (pszAnchored)
+		SetText(pszAnchored);
+
+	SetUseToggleText(true);
 }
 
-void CHudResourceWeaponCharge::AddPanelSpecificOptions(KeyValues* kvOptions)
+void CHudResourceWeaponCharge::AddPanelSpecificOptions(
+	KeyValues* kvOptions)
 {
 	AddHeading(kvOptions, "#HudPanel_Heading_General", 0);
 	AddHeading(kvOptions, "#HudPanel_Heading_QuantityDisplay", 1);
@@ -113,21 +149,6 @@ void CHudResourceWeaponCharge::AddPanelSpecificOptions(KeyValues* kvOptions)
 		m_bDefaultShowPanel ? WHEN_ACTIVE : NEVER,
 		0);
 
-	if (m_iWeaponID == FF_WEAPON_ASSAULTCANNON)
-	{
-		KeyValues* kvProgress = new KeyValues("Values");
-		kvProgress->SetString("2", "#HudPanel_DisplayAlways");
-		kvProgress->SetString("1", "#HudPanel_DisplayWhenActive");
-		kvProgress->SetString("0", "#HudPanel_DisplayNever");
-
-		AddComboOption(
-			kvOptions,
-			"ShowProgress",
-			"#HudPanel_Option_ShowProgress",
-			kvProgress,
-			PROGRESS_ALWAYS,
-			0);
-	}
 
 	AddComboOption(
 		kvOptions,
@@ -180,8 +201,6 @@ KeyValues* CHudResourceWeaponCharge::GetDefaultStyleData()
 	KeyValues* kvValues = new KeyValues("PanelSpecificValues");
 	kvValues->SetBool("ShowPanel", m_bDefaultShowPanel);
 	kvValues->SetInt("ValueDisplay", DISPLAY_PERCENTAGE);
-	if (m_iWeaponID == FF_WEAPON_ASSAULTCANNON)
-		kvValues->SetInt("ShowProgress", PROGRESS_ALWAYS);
 
 	kvPreset->AddSubKey(kvValues);
 	return kvPreset;
@@ -196,16 +215,12 @@ void CHudResourceWeaponCharge::ApplyStyleData(KeyValues* kvStyleData, KeyValues*
 	if (iShowPanel != -1)
 		m_showPanel = static_cast<PanelVisibility>(clamp(iShowPanel, int(NEVER), int(WHILE_EQUIPPED)));
 
-	int iShowProgress = GetInt("ShowProgress", kvValues, kvDefaultValues);
-	if (iShowProgress != -1)
-		m_showProgress = static_cast<ProgressVisibility>(clamp(iShowProgress, int(PROGRESS_NEVER), int(PROGRESS_ALWAYS)));
-
 	std::optional<AmountDisplay> display = GetAmountDisplay("ValueDisplay", kvValues, kvDefaultValues);
 	if (display.has_value())
 		m_pCharge->SetAmountDisplay(display.value());
 }
 
-bool CHudResourceWeaponCharge::IsAvailable()
+bool CHudResourceWeaponCharge::IsEquipped()
 {
 	C_FFPlayer* pPlayer = C_FFPlayer::GetLocalFFPlayer();
 	if (!pPlayer || FF_IsPlayerSpec(pPlayer) || !FF_HasPlayerPickedClass(pPlayer))
@@ -218,20 +233,20 @@ bool CHudResourceWeaponCharge::IsAvailable()
 	return true;
 }
 
-CHudResourceWeaponCharge::ChargeData CHudResourceWeaponCharge::GetChargeData()
+float CHudResourceWeaponCharge::GetCharge()
 {
 	CFFWeaponBase* pWeapon
 		= C_FFPlayer::GetLocalFFPlayer()
 		->GetActiveFFWeapon();
 
-	float flCharge = 0, flChargeMax = 0;
-	char cIcon = '?';
+	float flCharge = 0;
 
 	switch (m_iWeaponID)
 	{
 	case FF_WEAPON_SNIPERRIFLE:
 	{
-		CFFWeaponSniperRifle* pRifle = static_cast<CFFWeaponSniperRifle*>(pWeapon);
+		CFFWeaponSniperRifle* pRifle
+			= static_cast<CFFWeaponSniperRifle*>(pWeapon);
 
 		// Charge starts at the rifle's minimum damage while the shot is held.
 		if (!pRifle->IsInFire())
@@ -240,77 +255,74 @@ CHudResourceWeaponCharge::ChargeData CHudResourceWeaponCharge::GetChargeData()
 		}
 		else
 		{
-			flCharge = clamp(gpGlobals->curtime - pRifle->GetFireStartTime(), 1.0f, FF_SNIPER_MAXCHARGE);
+			flCharge
+				= clamp(
+					gpGlobals->curtime - pRifle->GetFireStartTime(),
+					1.0f,
+					FF_SNIPER_MAXCHARGE);
 		}
-		flChargeMax = FF_SNIPER_MAXCHARGE;
-		cIcon = 's';
 		break;
 	}
 
 	case FF_WEAPON_ASSAULTCANNON:
-	{
 		flCharge = static_cast<CFFWeaponAssaultCannon*>(pWeapon)->m_flChargeTime;
-		flChargeMax = FF_AC_WINDUPTIME;
-		cIcon = 'b';
 		break;
-	}
 
 	case FF_WEAPON_JUMPGUN:
-	{
-		cIcon = 'j';
 		flCharge = static_cast<CFFWeaponJumpgun*>(pWeapon)->GetClampedCharge();
-		flChargeMax = JUMPGUN_CHARGEUPTIME;
 		break;
 	}
-	}
 
-	flCharge = clamp(flCharge, 0.0f, flChargeMax);
-
-	return {
+	return clamp(
 		flCharge,
-		flChargeMax,
-		cIcon
-	};
+		0.0f,
+		m_pCharge->GetAmountMax());
 }
 
 void CHudResourceWeaponCharge::UpdateCharge()
 {
-	const bool bPreview = IsInPreviewMode();
-	const bool bAvailable = engine->IsInGame() && IsAvailable();
-	C_FFPlayer* pPlayer = C_FFPlayer::GetLocalFFPlayer();
-	const bool bAnchored = m_iWeaponID == FF_WEAPON_ASSAULTCANNON
-		&& pPlayer && pPlayer->m_bAssaultCannonAnchored;
-
-	ChargeData charge;
-	if (bAvailable)
-		charge = GetChargeData();
-	else if (bPreview)
+	if (m_showPanel == NEVER)
 	{
-		charge.m_flCharge = 0.6f;
-		charge.m_cIcon = m_iWeaponID == FF_WEAPON_JUMPGUN ? 'j'
-			: m_iWeaponID == FF_WEAPON_ASSAULTCANNON ? 'b' : 's';
+		SetHiddenBits(HIDEHUD_ALWAYS);
+		return;
 	}
 
-	const bool bActive = charge.m_flCharge > 0.0f || bAnchored;
-	const bool bShow = m_showPanel != NEVER
-		&& (bPreview || (bAvailable && (m_showPanel == WHILE_EQUIPPED || bActive)));
-	SetHiddenBits(bShow ? (bPreview ? 0 : DEFAULT_HIDDEN_BITS) : HIDEHUD_ALWAYS);
+	if (IsInPreviewMode())
+	{
+		SetHiddenBits(0);
+
+		if (m_iWeaponID == FF_WEAPON_ASSAULTCANNON)
+			SetToggleTextVisible(true);
+
+		m_pCharge->SetAmount(m_pCharge->GetAmountMax() * 0.6f);
+		return;
+	}
+
+	if (!engine->IsInGame() || !IsEquipped())
+	{
+		SetHiddenBits(HIDEHUD_ALWAYS);
+		return;
+	}
+
+	C_FFPlayer* pPlayer = C_FFPlayer::GetLocalFFPlayer();
+	const bool bAnchored
+		= m_iWeaponID == FF_WEAPON_ASSAULTCANNON
+			&& pPlayer->m_bAssaultCannonAnchored;
+
+	const float flCharge = GetCharge();
 
 	if (m_iWeaponID == FF_WEAPON_ASSAULTCANNON)
-		SetToggleTextVisible(bPreview || bAnchored);
+		SetToggleTextVisible(bAnchored);
 
-	if (bAvailable || bPreview)
+	m_pCharge->SetAmount(flCharge);
+
+	if (m_showPanel == WHEN_ACTIVE && flCharge <= 0.0f && !bAnchored)
 	{
-		m_pCharge->SetAmountMax(charge.m_flChargeMax);
-		m_pCharge->SetAmount(charge.m_flCharge);
-		m_pCharge->SetIcon(charge.m_cIcon);
+		SetHiddenBits(HIDEHUD_ALWAYS);
+		return;
 	}
 
-	if (m_showProgress == PROGRESS_ALWAYS
-		|| (m_showProgress == PROGRESS_WHEN_ACTIVE && (bPreview || charge.m_flCharge > 0.0f)))
-		EnableItem(m_pCharge);
-	else
-		DisableItem(m_pCharge);
+	SetHiddenBits(DEFAULT_HIDDEN_BITS);
 }
 
 bool CHudResourceWeaponCharge::ShouldDraw()
@@ -318,12 +330,4 @@ bool CHudResourceWeaponCharge::ShouldDraw()
 	UpdateCharge();
 
 	return CHudElement::ShouldDraw();
-}
-
-void CHudResourceWeaponCharge::OnTick()
-{
-	// Tick signals also run for previews outside the in-game HUD loop.
-	UpdateCharge();
-
-	BaseClass::OnTick();
 }
