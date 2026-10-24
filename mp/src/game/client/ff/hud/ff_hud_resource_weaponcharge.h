@@ -25,13 +25,14 @@ public:
 		bool bShowPanel);
 	void Init();
 	void VidInit();
+	bool ShouldDraw() override;
 
 protected:
 	void ApplySchemeSettings(vgui::IScheme* pScheme) override;
 	void AddPanelSpecificOptions(KeyValues* kvOptions) override;
 	KeyValues* GetDefaultStyleData() override;
 	void ApplyStyleData(KeyValues* kvStyleData, KeyValues* kvDefaults) override;
-	void OnThink() override;
+	void OnTick() override;
 
 private:
 	int m_iWeaponID;
@@ -44,6 +45,7 @@ private:
 	ProgressVisibility m_showProgress = PROGRESS_ALWAYS;
 	vgui::FFQuantityItem* m_pCharge = nullptr;
 
+	void UpdateCharge();
 	bool IsAvailable();
 	ChargeData GetChargeData();
 };

@@ -273,7 +273,7 @@ CHudResourceWeaponCharge::ChargeData CHudResourceWeaponCharge::GetChargeData()
 	};
 }
 
-void CHudResourceWeaponCharge::OnThink()
+void CHudResourceWeaponCharge::UpdateCharge()
 {
 	const bool bPreview = IsInPreviewMode();
 	const bool bAvailable = engine->IsInGame() && IsAvailable();
@@ -311,6 +311,19 @@ void CHudResourceWeaponCharge::OnThink()
 		EnableItem(m_pCharge);
 	else
 		DisableItem(m_pCharge);
+}
 
-	BaseClass::OnThink();
+bool CHudResourceWeaponCharge::ShouldDraw()
+{
+	UpdateCharge();
+
+	return CHudElement::ShouldDraw();
+}
+
+void CHudResourceWeaponCharge::OnTick()
+{
+	// Tick signals also run for previews outside the in-game HUD loop.
+	UpdateCharge();
+
+	BaseClass::OnTick();
 }
