@@ -79,6 +79,14 @@ void CHudResourcePipeTrap::AddPanelSpecificOptions(
 		1,
 		0);
 
+	AddComboOption(
+		kvPanelSpecificOptions,
+		"ShowPipes",
+		"#HudPanel_Option_ShowPipes",
+		kvVisibility->MakeCopy(),
+		IF_DEPLOYED,
+		0);
+
 	AddBooleanOption(
 		kvPanelSpecificOptions,
 		"HideText",
@@ -103,7 +111,8 @@ KeyValues* CHudResourcePipeTrap::GetDefaultStyleData()
 	KeyValues* kvPanelSpecificValues
 		= new KeyValues("PanelSpecificValues");
 
-	kvPanelSpecificValues->SetBool("ShowPanel", true);
+	kvPanelSpecificValues->SetInt("ShowPanel", ALWAYS);
+	kvPanelSpecificValues->SetInt("ShowPipes", IF_DEPLOYED);
 	kvPanelSpecificValues->SetBool("HideText", false);
 
 	kvPanelSpecificValues->SetInt("ValueDisplay", DISPLAY_MAX);
@@ -127,11 +136,18 @@ void CHudResourcePipeTrap::ApplyStyleData(
 	KeyValues* kvDefaultPanelSpecificValues
 		= kvDefaultStyleData->FindKey("PanelSpecificValues", true);
 
-	int iShowPanel
-		= GetInt(
+	std::optional<PanelVisibility> showPanel
+		= GetPanelVisibility(
 			"ShowPanel",
 			kvPanelSpecificValues,
 			kvDefaultPanelSpecificValues);
+
+	std::optional<PanelVisibility> showPipes
+		= GetPanelVisibility(
+			"ShowPipes",
+			kvPanelSpecificValues,
+			kvDefaultPanelSpecificValues);
+
 	int iHideText
 		= GetInt(
 			"HideText",
@@ -143,10 +159,11 @@ void CHudResourcePipeTrap::ApplyStyleData(
 			kvPanelSpecificValues,
 			kvDefaultPanelSpecificValues);
 
-	if (iShowPanel != -1)
-	{
-		m_showPanel = static_cast<PanelVisibility>(clamp(iShowPanel, int(NEVER), int(IF_DEPLOYED)));
-	}
+	if (showPanel.has_value())
+		m_showPanel = showPanel.value();
+
+	if (showPipes.has_value())
+		m_showPipes = showPipes.value();
 
 	if (iHideText != -1)
 	{
@@ -161,6 +178,23 @@ void CHudResourcePipeTrap::ApplyStyleData(
 			valueDisplay.value());
 
 	ApplyDisplayOptions();
+}
+
+std::optional<CHudResourcePipeTrap::PanelVisibility> CHudResourcePipeTrap::GetPanelVisibility(
+	const char* keyName,
+	KeyValues* kvStyleData,
+	KeyValues* kvDefaultStyleData)
+{
+	int value
+		= GetInt(
+			keyName,
+			kvStyleData,
+			kvDefaultStyleData,
+			-1);
+
+	return value == -1
+		? std::optional<PanelVisibility>()
+		: static_cast<PanelVisibility>(value);
 }
 
 void CHudResourcePipeTrap::Init()
@@ -215,12 +249,10 @@ void CHudResourcePipeTrap::OnTick()
 
 	if (m_iNumPipes > 0)
 	{
-		ShowItem(m_qiPipeLaid);
 		SetText(m_wsDeployed);
 	}
 	else
 	{
-		HideItem(m_qiPipeLaid);
 		SetText(m_wsNotDeployed);
 	}
 
@@ -253,12 +285,19 @@ void CHudResourcePipeTrap::MsgFunc_PipeMsg(bf_read& msg)
 
 void CHudResourcePipeTrap::ApplyDisplayOptions()
 {
+	const bool bDeployed = IsInPreviewMode() || m_iNumPipes > 0;
+
+	if (m_showPipes == ALWAYS || (m_showPipes == IF_DEPLOYED && bDeployed))
+		EnableItem(m_qiPipeLaid);
+	else
+		DisableItem(m_qiPipeLaid);
+
+	ShowItem(m_qiPipeLaid);
+
 	if (IsInPreviewMode())
 	{
 		SetHiddenBits(m_showPanel != NEVER ? 0 : HIDEHUD_ALWAYS);
 		SetText(m_wsDeployed);
-		EnableItem(m_qiPipeLaid);
-		ShowItem(m_qiPipeLaid);
 		return;
 	}
 
@@ -266,12 +305,10 @@ void CHudResourcePipeTrap::ApplyDisplayOptions()
 	if (m_iNumPipes > 0)
 	{
 		SetText(m_wsDeployed);
-		ShowItem(m_qiPipeLaid);
 	}
 	else
 	{
 		SetText(m_wsNotDeployed);
-		HideItem(m_qiPipeLaid);
 	}
 
 	if (m_showPanel != NEVER

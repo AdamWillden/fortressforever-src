@@ -34,6 +34,7 @@ private:
 	};
 
 	PanelVisibility m_showPanel = ALWAYS;
+	PanelVisibility m_showPipes = IF_DEPLOYED;
 	bool m_bHasPipeLauncher = false;
 
 	virtual void ApplySchemeSettings(
@@ -45,6 +46,11 @@ private:
 	void ApplyStyleData(
 		KeyValues* kvStyleData,
 		KeyValues* kvDefaultStyleData) override;
+
+	std::optional<PanelVisibility> GetPanelVisibility(
+		const char* keyName,
+		KeyValues* kvStyleData,
+		KeyValues* kvDefaultStyleData);
 
 	void ApplyDisplayOptions();
 
