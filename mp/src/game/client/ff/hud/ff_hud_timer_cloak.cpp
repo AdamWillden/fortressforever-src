@@ -15,7 +15,7 @@ CHudTimerCloak::CHudTimerCloak(const char* pElementName)
 	SetParent(g_pClientMode->GetViewport());
 	SetHiddenBits(DEFAULT_HIDDEN_BITS);
 	SetHeaderText(L"Cloak cooldown");
-	SetHeaderIconChar('f');
+	SetHeaderIconChar('n');
 	SetUseToggleText(true);
 
 	m_qiTimer = nullptr;
