@@ -87,11 +87,12 @@ void CHudResourcePipeTrap::AddPanelSpecificOptions(
 		IF_DEPLOYED,
 		0);
 
-	AddBooleanOption(
+	AddComboOption(
 		kvPanelSpecificOptions,
-		"HideText",
-		"#HudPanel_Option_HideText",
-		false,
+		"ShowText",
+		"#HudPanel_Option_ShowText",
+		kvVisibility->MakeCopy(),
+		ALWAYS,
 		0);
 
 	AddComboOption(
@@ -113,7 +114,7 @@ KeyValues* CHudResourcePipeTrap::GetDefaultStyleData()
 
 	kvPanelSpecificValues->SetInt("ShowPanel", ALWAYS);
 	kvPanelSpecificValues->SetInt("ShowPipes", IF_DEPLOYED);
-	kvPanelSpecificValues->SetBool("HideText", false);
+	kvPanelSpecificValues->SetInt("ShowText", ALWAYS);
 
 	kvPanelSpecificValues->SetInt("ValueDisplay", DISPLAY_MAX);
 
@@ -148,11 +149,12 @@ void CHudResourcePipeTrap::ApplyStyleData(
 			kvPanelSpecificValues,
 			kvDefaultPanelSpecificValues);
 
-	int iHideText
-		= GetInt(
-			"HideText",
+	std::optional<PanelVisibility> showText
+		= GetPanelVisibility(
+			"ShowText",
 			kvPanelSpecificValues,
 			kvDefaultPanelSpecificValues);
+
 	std::optional<AmountDisplay> valueDisplay
 		= GetAmountDisplay(
 			"ValueDisplay",
@@ -165,12 +167,14 @@ void CHudResourcePipeTrap::ApplyStyleData(
 	if (showPipes.has_value())
 		m_showPipes = showPipes.value();
 
-	if (iHideText != -1)
+	if (showText.has_value())
+		m_showText = showText.value();
+
+	// Preserve assignments saved with the former Hide Text checkbox.
+	if (!kvPanelSpecificValues->FindKey("ShowText")
+		&& kvPanelSpecificValues->FindKey("HideText"))
 	{
-		if (iHideText == 1)
-			SetUseToggleText(false);
-		else
-			SetUseToggleText(true);
+		m_showText = kvPanelSpecificValues->GetBool("HideText") ? NEVER : ALWAYS;
 	}
 
 	if (valueDisplay.has_value())
@@ -286,6 +290,9 @@ void CHudResourcePipeTrap::MsgFunc_PipeMsg(bf_read& msg)
 void CHudResourcePipeTrap::ApplyDisplayOptions()
 {
 	const bool bDeployed = IsInPreviewMode() || m_iNumPipes > 0;
+
+	SetUseToggleText(m_showText != NEVER);
+	SetToggleTextVisible(m_showText == ALWAYS || (m_showText == IF_DEPLOYED && bDeployed));
 
 	if (m_showPipes == ALWAYS || (m_showPipes == IF_DEPLOYED && bDeployed))
 		EnableItem(m_qiPipeLaid);

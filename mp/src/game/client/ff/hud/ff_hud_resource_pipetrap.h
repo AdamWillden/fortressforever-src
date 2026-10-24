@@ -35,6 +35,7 @@ private:
 
 	PanelVisibility m_showPanel = ALWAYS;
 	PanelVisibility m_showPipes = IF_DEPLOYED;
+	PanelVisibility m_showText = ALWAYS;
 	bool m_bHasPipeLauncher = false;
 
 	virtual void ApplySchemeSettings(
