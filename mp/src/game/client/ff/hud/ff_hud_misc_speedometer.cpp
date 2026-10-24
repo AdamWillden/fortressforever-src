@@ -15,6 +15,7 @@ CHudMiscSpeedometer::CHudMiscSpeedometer(const char* pElementName)
 
 	SetHiddenBits(DEFAULT_HIDDEN_BITS);
 
+	SetHeaderIconChar('v');
 	SetHeaderText(L"Speedometer");
 
 	m_qiInstantaneousSpeed = nullptr;
