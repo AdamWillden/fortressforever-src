@@ -851,7 +851,6 @@ void CFFPlayer::ClassSpecificSkillHold()
 	{
 		case CLASS_PYRO:
 			JetpackHold();
-			m_flJetpackCooldown = gpGlobals->curtime + 3.81f;
 			if (m_iJetpackFuel < JETPACK_MINFUEL)
 			{
 				m_bJetpacking = false;
@@ -879,7 +878,6 @@ void CFFPlayer::ClassSpecificSkill_Post()
 #endif
 		case CLASS_PYRO:
 			m_bJetpacking = false;
-			m_flJetpackCooldown = gpGlobals->curtime + 3.81f;
 			break;
 
 		default:
@@ -2075,6 +2073,9 @@ void CFFPlayer::JetpackHold( void )
 
 	m_bJetpacking = true;
 	m_iJetpackFuel -= JETPACK_FUELHOVERCOST;
+
+	// Recovery starts from the last successful fuel burn.
+	m_flJetpackCooldown = gpGlobals->curtime + 3.81f;
 
 	Vector vecForward, vecRight, vecUp;
 	EyeVectors( &vecForward, &vecRight, &vecUp);
