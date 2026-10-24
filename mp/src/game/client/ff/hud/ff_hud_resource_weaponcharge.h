@@ -31,7 +31,7 @@ protected:
 	void AddPanelSpecificOptions(KeyValues* kvOptions) override;
 	KeyValues* GetDefaultStyleData() override;
 	void ApplyStyleData(KeyValues* kvStyleData, KeyValues* kvDefaults) override;
-	void OnTick() override;
+	void OnThink() override;
 
 private:
 	int m_iWeaponID;

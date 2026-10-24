@@ -273,7 +273,7 @@ CHudResourceWeaponCharge::ChargeData CHudResourceWeaponCharge::GetChargeData()
 	};
 }
 
-void CHudResourceWeaponCharge::OnTick()
+void CHudResourceWeaponCharge::OnThink()
 {
 	const bool bPreview = IsInPreviewMode();
 	const bool bAvailable = engine->IsInGame() && IsAvailable();
@@ -312,5 +312,5 @@ void CHudResourceWeaponCharge::OnTick()
 	else
 		DisableItem(m_pCharge);
 
-	BaseClass::OnTick();
+	BaseClass::OnThink();
 }
