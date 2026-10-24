@@ -14,7 +14,8 @@ using namespace FFQuantityHelper;
 
 DECLARE_HUDELEMENT(CHudResourceSniperCharge);
 DECLARE_HUDELEMENT(CHudResourceAssaultCannonCharge);
-DECLARE_HUDELEMENT(CHudResourceJumpgunCharge);
+// Jump Gun is currently disabled in the normal loadout.
+// DECLARE_HUDELEMENT(CHudResourceJumpgunCharge);
 
 CHudResourceSniperCharge::CHudResourceSniperCharge(const char* pElementName)
 	: CHudResourceWeaponCharge(
@@ -34,14 +35,14 @@ CHudResourceAssaultCannonCharge::CHudResourceAssaultCannonCharge(const char* pEl
 {
 }
 
-CHudResourceJumpgunCharge::CHudResourceJumpgunCharge(const char* pElementName)
-	: CHudResourceWeaponCharge(
-		pElementName,
-		FF_WEAPON_JUMPGUN,
-		"#HudPanel_JumpgunCharge",
-		true)
-{
-}
+// CHudResourceJumpgunCharge::CHudResourceJumpgunCharge(const char* pElementName)
+// 	: CHudResourceWeaponCharge(
+// 		pElementName,
+// 		FF_WEAPON_JUMPGUN,
+// 		"#HudPanel_JumpgunCharge",
+// 		true)
+// {
+// }
 
 CHudResourceWeaponCharge::CHudResourceWeaponCharge(
 	const char* pElementName,
