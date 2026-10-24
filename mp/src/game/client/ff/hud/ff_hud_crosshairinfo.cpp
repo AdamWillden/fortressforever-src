@@ -102,7 +102,7 @@ void CHudCrosshairInfoPanel::Init()
 		"#FF_ITEM_HEALTH", "#FF_ITEM_AMMO", "#FF_ITEM_ARMOR", "#FF_ITEM_CELLS",
 		"#FF_ITEM_ROCKETS", "#FF_ITEM_NAILS", "#FF_ITEM_SHELLS", "#FF_ITEM_LEVEL"
 	};
-	const char icons[QUANTITY_COUNT] = { 'a', 'r', 's', 'p', 'i', 0, 'r', 'd' };
+	const char icons[QUANTITY_COUNT] = { 'a', 'r', 's', 'p', 'i', 't', 'r', 'd' };
 
 	for (int i = 0; i < QUANTITY_COUNT; ++i)
 	{
