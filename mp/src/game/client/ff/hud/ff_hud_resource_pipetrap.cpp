@@ -145,7 +145,7 @@ void CHudResourcePipeTrap::ApplyStyleData(
 
 	if (iShowPanel != -1)
 	{
-		m_iShowPanel = clamp(iShowPanel, 0, 2);
+		m_showPanel = static_cast<PanelVisibility>(clamp(iShowPanel, int(NEVER), int(IF_DEPLOYED)));
 	}
 
 	if (iHideText != -1)
@@ -255,7 +255,7 @@ void CHudResourcePipeTrap::ApplyDisplayOptions()
 {
 	if (IsInPreviewMode())
 	{
-		SetHiddenBits(m_iShowPanel != 0 ? 0 : HIDEHUD_ALWAYS);
+		SetHiddenBits(m_showPanel != NEVER ? 0 : HIDEHUD_ALWAYS);
 		SetText(m_wsDeployed);
 		EnableItem(m_qiPipeLaid);
 		ShowItem(m_qiPipeLaid);
@@ -274,8 +274,8 @@ void CHudResourcePipeTrap::ApplyDisplayOptions()
 		HideItem(m_qiPipeLaid);
 	}
 
-	if (m_iShowPanel != 0
-		&& (m_iShowPanel != 2 || m_iNumPipes > 0)
+	if (m_showPanel != NEVER
+		&& (m_showPanel != IF_DEPLOYED || m_iNumPipes > 0)
 		&& (m_bHasPipeLauncher || m_iNumPipes > 0))
 	{
 		SetHiddenBits(DEFAULT_HIDDEN_BITS);

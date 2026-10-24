@@ -26,7 +26,14 @@ private:
 	std::wstring m_wsNeedAmmo;
 	std::wstring m_wsNotDeployed;
 
-	int m_iShowPanel = 1;
+	enum PanelVisibility
+	{
+		NEVER = 0,
+		ALWAYS = 1,
+		IF_DEPLOYED = 2
+	};
+
+	PanelVisibility m_showPanel = ALWAYS;
 	bool m_bHasPipeLauncher = false;
 
 	virtual void ApplySchemeSettings(
