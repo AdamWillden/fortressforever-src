@@ -361,7 +361,7 @@ namespace vgui
 		if (m_bInPreviewMode && m_bHasAlertOptions)
 		{
 			// Preview the configured flash every four seconds, including at the main menu.
-			flElapsed = static_cast<float>(fmod(Plat_FloatTime(), 4.0));
+			flElapsed = static_cast<float>(fmod(Plat_FloatTime(), 3.0));
 		}
 		else
 		{
