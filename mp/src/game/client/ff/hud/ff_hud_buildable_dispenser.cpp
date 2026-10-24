@@ -272,6 +272,7 @@ void CHudBuildableDispenser::Init()
 
 	m_storedItems[1] = AddItem("Nails");
 	m_storedItems[1]->SetLabel("#FF_ITEM_NAILS");
+	m_storedItems[1]->SetIcon('t');
 	m_storedItems[1]->SetAmountDisplay(DISPLAY_MAX);
 	DisableItem(m_storedItems[1]);
 
