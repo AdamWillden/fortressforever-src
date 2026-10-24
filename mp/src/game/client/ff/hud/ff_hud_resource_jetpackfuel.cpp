@@ -20,7 +20,7 @@ CHudResourceJetpackFuel::CHudResourceJetpackFuel(
 
 	SetHiddenBits(DEFAULT_HIDDEN_BITS);
 
-	SetHeaderText(L"Jetpack fuel");
+	SetHeaderText(L"Jetpack");
 	SetHeaderIconChar('h');
 	SetUseToggleText(true);
 	SetText(m_wsRegenerating);
