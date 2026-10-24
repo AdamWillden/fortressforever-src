@@ -33,7 +33,7 @@ private:
 	int m_iShowPanel;
 	int m_iShowProgress = 2;
 	vgui::FFQuantityItem* m_pCharge = nullptr;
-	bool GetCharge(float& flCharge);
+	bool GetCharge(float& flCharge, char& cIcon);
 };
 
 class CHudResourceSniperCharge : public CHudResourceWeaponCharge

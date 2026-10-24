@@ -30,7 +30,7 @@ CHudResourceAssaultCannonCharge::CHudResourceAssaultCannonCharge(const char* pEl
 		pElementName,
 		FF_WEAPON_ASSAULTCANNON,
 		"#HudPanel_AssaultCannonCharge",
-		false)
+		true)
 {
 }
 
@@ -205,7 +205,7 @@ void CHudResourceWeaponCharge::ApplyStyleData(KeyValues* kvStyleData, KeyValues*
 		m_pCharge->SetAmountDisplay(display.value());
 }
 
-bool CHudResourceWeaponCharge::GetCharge(float& flCharge)
+bool CHudResourceWeaponCharge::GetCharge(float& flCharge, char& cIcon)
 {
 	C_FFPlayer* pPlayer = C_FFPlayer::GetLocalFFPlayer();
 	if (!pPlayer || FF_IsPlayerSpec(pPlayer) || !FF_HasPlayerPickedClass(pPlayer))
@@ -219,6 +219,7 @@ bool CHudResourceWeaponCharge::GetCharge(float& flCharge)
 	{
 	case FF_WEAPON_SNIPERRIFLE:
 	{
+		cIcon = 's';
 		CFFWeaponSniperRifle* pRifle = static_cast<CFFWeaponSniperRifle*>(pWeapon);
 		if (!pRifle->IsInFire())
 		{
@@ -231,9 +232,11 @@ bool CHudResourceWeaponCharge::GetCharge(float& flCharge)
 	}
 
 	case FF_WEAPON_ASSAULTCANNON:
+		cIcon = 'b';
 		flCharge = static_cast<CFFWeaponAssaultCannon*>(pWeapon)->m_flChargeTime / FF_AC_WINDUPTIME;
 		break;
 	case FF_WEAPON_JUMPGUN:
+		cIcon = 'j';
 		flCharge = static_cast<CFFWeaponJumpgun*>(pWeapon)->GetClampedCharge() / JUMPGUN_CHARGEUPTIME;
 		break;
 	default:
@@ -253,7 +256,8 @@ bool CHudResourceWeaponCharge::ShouldDraw()
 		return true;
 
 	float flCharge;
-	if (!engine->IsInGame() || !GetCharge(flCharge))
+	char cIcon;
+	if (!engine->IsInGame() || !GetCharge(flCharge, cIcon))
 		return false;
 
 	C_FFPlayer* pPlayer = C_FFPlayer::GetLocalFFPlayer();
@@ -272,8 +276,12 @@ void CHudResourceWeaponCharge::OnTick()
 	}
 
 	float flCharge = 0.6f;
-	if (IsInPreviewMode() || (engine->IsInGame() && GetCharge(flCharge)))
+	char cIcon = 'b';
+	if (IsInPreviewMode() || (engine->IsInGame() && GetCharge(flCharge, cIcon)))
+	{
 		m_pCharge->SetAmount(flCharge * 100);
+		m_pCharge->SetIcon(cIcon);
+	}
 
 	if (m_iShowProgress == 2
 		|| (m_iShowProgress == 1 && (IsInPreviewMode() || flCharge > 0.0f)))
