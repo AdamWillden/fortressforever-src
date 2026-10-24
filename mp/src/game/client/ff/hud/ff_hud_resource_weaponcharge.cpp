@@ -77,13 +77,14 @@ void CHudResourceWeaponCharge::Init()
 	{
 	case FF_WEAPON_SNIPERRIFLE:
 		m_pCharge->SetAmountMax(FF_SNIPER_MAXCHARGE);
-		m_pCharge->SetIcon('s');
+		m_pCharge->SetIcon('l');
+		SetHeaderIconChar('x');
 		break;
-	}
 
 	case FF_WEAPON_ASSAULTCANNON:
 		m_pCharge->SetAmountMax(FF_AC_WINDUPTIME);
 		m_pCharge->SetIcon('b');
+		SetHeaderIconChar('z');
 		break;
 
 	case FF_WEAPON_JUMPGUN:
@@ -206,18 +207,57 @@ KeyValues* CHudResourceWeaponCharge::GetDefaultStyleData()
 	return kvPreset;
 }
 
-void CHudResourceWeaponCharge::ApplyStyleData(KeyValues* kvStyleData, KeyValues* kvDefaults)
+void CHudResourceWeaponCharge::ApplyStyleData(
+	KeyValues* kvStyleData,
+	KeyValues* kvDefaults)
 {
-	BaseClass::ApplyStyleData(kvStyleData, kvDefaults);
-	KeyValues* kvValues = kvStyleData->FindKey("PanelSpecificValues", true);
-	KeyValues* kvDefaultValues = kvDefaults->FindKey("PanelSpecificValues", true);
-	int iShowPanel = GetInt("ShowPanel", kvValues, kvDefaultValues);
-	if (iShowPanel != -1)
-		m_showPanel = static_cast<PanelVisibility>(clamp(iShowPanel, int(NEVER), int(WHILE_EQUIPPED)));
+	BaseClass::ApplyStyleData(
+		kvStyleData,
+		kvDefaults);
 
-	std::optional<AmountDisplay> display = GetAmountDisplay("ValueDisplay", kvValues, kvDefaultValues);
-	if (display.has_value())
-		m_pCharge->SetAmountDisplay(display.value());
+	KeyValues* kvPanelSpecificValues
+		= kvStyleData->FindKey("PanelSpecificValues", true);
+
+	KeyValues* kvDefaultPanelSpecificValues
+		= kvDefaults->FindKey("PanelSpecificValues", true);
+
+	std::optional<PanelVisibility> showPanel
+		= GetPanelVisibility(
+			"ShowPanel",
+			kvPanelSpecificValues,
+			kvDefaultPanelSpecificValues);
+
+	if (showPanel.has_value())
+		m_showPanel = showPanel.value();
+
+	std::optional<AmountDisplay> chargeDisplay
+		= GetAmountDisplay(
+			"ValueDisplay",
+			kvPanelSpecificValues,
+			kvDefaultPanelSpecificValues);
+
+	if (chargeDisplay.has_value())
+	{
+		m_pCharge->SetAmountDisplay(
+			chargeDisplay.value());
+	}
+}
+
+std::optional<CHudResourceWeaponCharge::PanelVisibility> CHudResourceWeaponCharge::GetPanelVisibility(
+	const char* keyName,
+	KeyValues* kvStyleData,
+	KeyValues* kvDefaultStyleData)
+{
+	int value
+		= GetInt(
+			keyName,
+			kvStyleData,
+			kvDefaultStyleData,
+			-1);
+
+	return value == -1
+		? std::optional<PanelVisibility>()
+		: static_cast<PanelVisibility>(value);
 }
 
 bool CHudResourceWeaponCharge::IsEquipped()
@@ -287,6 +327,9 @@ void CHudResourceWeaponCharge::UpdateCharge()
 		return;
 	}
 
+	bool bIsAssultCannon
+		= m_iWeaponID == FF_WEAPON_ASSAULTCANNON;
+
 	if (IsInPreviewMode())
 	{
 		SetHiddenBits(0);
@@ -304,25 +347,25 @@ void CHudResourceWeaponCharge::UpdateCharge()
 		return;
 	}
 
-	C_FFPlayer* pPlayer = C_FFPlayer::GetLocalFFPlayer();
 	const bool bAnchored
-		= m_iWeaponID == FF_WEAPON_ASSAULTCANNON
-			&& pPlayer->m_bAssaultCannonAnchored;
+		= bIsAssultCannon
+			&& C_FFPlayer::GetLocalFFPlayer()
+				->m_bAssaultCannonAnchored;
+
+	if (bIsAssultCannon)
+		SetToggleTextVisible(bAnchored);
 
 	const float flCharge = GetCharge();
 
-	if (m_iWeaponID == FF_WEAPON_ASSAULTCANNON)
-		SetToggleTextVisible(bAnchored);
-
 	m_pCharge->SetAmount(flCharge);
 
-	if (m_showPanel == WHEN_ACTIVE && flCharge <= 0.0f && !bAnchored)
-	{
-		SetHiddenBits(HIDEHUD_ALWAYS);
-		return;
-	}
+	bool bHidden
+		= m_showPanel == WHEN_ACTIVE
+			&& flCharge <= 0.0f
+			&& !bAnchored;
 
-	SetHiddenBits(DEFAULT_HIDDEN_BITS);
+	SetHiddenBits(
+		bHidden? HIDEHUD_ALWAYS : DEFAULT_HIDDEN_BITS);
 }
 
 bool CHudResourceWeaponCharge::ShouldDraw()

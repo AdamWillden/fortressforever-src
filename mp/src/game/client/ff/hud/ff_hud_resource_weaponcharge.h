@@ -39,6 +39,11 @@ private:
 	PanelVisibility m_showPanel;
 	vgui::FFQuantityItem* m_pCharge = nullptr;
 
+	std::optional<PanelVisibility> GetPanelVisibility(
+		const char* keyName,
+		KeyValues* kvStyleData,
+		KeyValues* kvDefaultStyleData);
+
 	void UpdateCharge();
 	bool IsEquipped();
 	float GetCharge();
