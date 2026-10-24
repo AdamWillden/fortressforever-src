@@ -22,6 +22,8 @@ private:
 
 	std::wstring m_wsFull;
 	std::wstring m_wsRegenerating;
+	std::wstring m_wsInUse = L"In Use";
+	std::wstring m_wsRecovering = L"Recovering...";
 
 	bool m_bShowPanel = false;
 	bool m_bHideWhenFull = false;

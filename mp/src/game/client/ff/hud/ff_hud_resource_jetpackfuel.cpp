@@ -21,7 +21,7 @@ CHudResourceJetpackFuel::CHudResourceJetpackFuel(
 	SetHiddenBits(DEFAULT_HIDDEN_BITS);
 
 	SetHeaderText(L"Jetpack fuel");
-	SetHeaderIconChar('r');
+	SetHeaderIconChar('h');
 	SetUseToggleText(true);
 	SetText(m_wsRegenerating);
 
@@ -48,6 +48,14 @@ void CHudResourceJetpackFuel::ApplySchemeSettings(
 	localized = g_pVGuiLocalize->Find("#HudPanel_Regenerating");
 	if (localized)
 		m_wsRegenerating = localized;
+
+	localized = g_pVGuiLocalize->Find("#HudPanel_InUse");
+	if (localized)
+		m_wsInUse = localized;
+
+	localized = g_pVGuiLocalize->Find("#HudPanel_Recovering");
+	if (localized)
+		m_wsRecovering = localized;
 }
 
 void CHudResourceJetpackFuel::AddPanelSpecificOptions(
@@ -180,7 +188,7 @@ void CHudResourceJetpackFuel::Init()
 
 	m_qiJetpackFuel = AddItem("HudResourceJetpackFuel");
 	m_qiJetpackFuel->SetLabel("#FF_ITEM_FUEL");
-	m_qiJetpackFuel->SetIcon('r');
+	m_qiJetpackFuel->SetIcon('m');
 	m_qiJetpackFuel->SetAmountDisplay(DISPLAY_MAX);
 	m_qiJetpackFuel->SetAmountMax(JETPACK_MAXFUEL);
 
@@ -231,8 +239,12 @@ void CHudResourceJetpackFuel::Paint()
 
 		m_qiJetpackFuel->SetAmount(pPlayer->m_iJetpackFuel);
 
-		if (pPlayer->m_iJetpackFuel >= JETPACK_MAXFUEL)
+		if (pPlayer->IsJetpacking())
+			SetText(m_wsInUse);
+		else if (pPlayer->m_iJetpackFuel >= JETPACK_MAXFUEL)
 			SetText(m_wsFull);
+		else if (gpGlobals->curtime < pPlayer->m_flJetpackCooldown)
+			SetText(m_wsRecovering);
 		else
 			SetText(m_wsRegenerating);
 	}
